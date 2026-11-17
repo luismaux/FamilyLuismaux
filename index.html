@@ -85,85 +85,89 @@ li.ed{flex-wrap:wrap;cursor:default;gap:8px}
 #st{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:13px;display:none}
 @media(prefers-reduced-motion:no-preference){li{transition:background .15s}li:active{background:var(--line)}}
 
-/* ===== Family Luismaux: nueva identidad visual ===== */
+/* ===== Family Luismaux: gris suave + azul y amarillo ===== */
 :root{
- --bg:#21150e;--card:#302116;--ink:#fff1dc;--mute:#c5aa8b;
- --pine:#ffb347;--acc:#ffb12e;--sun:#ffd51f;--line:#493322;
- --red:#ff7668;--band:#382713;--t0:#075fd0;--t1:#064aa9;
- --t2:#073b83;--t3:#352315;color-scheme:dark
+ --bg:#edf1f6;--card:#ffffff;--ink:#172b49;--mute:#718096;
+ --pine:#0863c9;--acc:#0875e8;--sun:#ffd51f;--line:#d7e0ec;
+ --red:#d84b4b;--band:#0755b5;--t0:#e7f1ff;--t1:#edf5ff;--t2:#e6f3ff;--t3:#f2f5fa;color-scheme:light
 }
 html,body{background:var(--bg);color:var(--ink)}
-body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
-.wrap{max-width:620px;padding:12px 18px calc(112px + env(safe-area-inset-bottom))}
-.top{background:linear-gradient(110deg,#352511,#493116);padding:15px 18px;border-bottom:1px solid #60421f}
+body{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+.wrap{max-width:620px;padding:12px 16px calc(108px + env(safe-area-inset-bottom))}
+.top{background:linear-gradient(120deg,#0755b5,#087cf0);padding:14px 18px;border-bottom:1px solid #3c9bff;box-shadow:0 3px 12px #164b8520}
 .topin{max-width:620px}
-.topin img{width:54px;height:54px;object-fit:cover;border:2px solid #ffd35c;border-radius:14px;box-shadow:0 3px 12px #0008}
-.top h1{font-size:25px;color:#fff3df}
-input,.ed select{background:#302116;border:1.5px solid #523a27;color:#fff1dc;border-radius:15px;min-height:52px}
-input::placeholder{color:#a58b72}
-input:focus-visible{border-color:#ffb347;outline:2px solid #ffb347}
-.add,.btn1{background:linear-gradient(135deg,#ffc34c,#f28c32);color:#29190d;border-radius:15px;font-weight:800;box-shadow:0 3px 0 #8c4a18}
-.btn2{border-color:#ffb347;color:#ffc16b}
-h2{font-size:17px;color:#ffb45d;font-weight:800;margin:24px 0 9px}
-ul{background:#302116;border:1px solid #4a3524;border-radius:19px;overflow:hidden}
-li{padding:15px 14px;border-color:#493322;min-height:64px}
-.nm{font-size:18px}
-.chk{width:29px;height:29px;border:2.5px solid #ffad4e}
-.done .chk{background:#ffd51f;border-color:#ffd51f;color:#21150e}
-.x{font-size:24px;color:#c9a987}
-.q{color:#ffc16b}
-.topin .back{color:#fff1dc}
-.who2{padding:14px 2px;color:#c7a987;font-size:13px}
-.who2 b{color:#ffbd53}
-.acts{gap:19px;padding:4px 0 12px;flex-wrap:wrap}
-.acts button{color:#d7b894;font-size:14px}
-.grid{gap:14px;padding:10px 0 18px}
-.tile{min-height:160px;border-radius:25px;color:white;background:linear-gradient(145deg,#087bf0,#0346a5);border:1px solid #2389ff;box-shadow:0 5px 0 #032c69,0 10px 22px #0005}
-.tile.t1{background:linear-gradient(145deg,#0878e8,#03449a)}
-.tile.t2{background:linear-gradient(145deg,#073e86,#06295b)}
-.tile.t3{background:linear-gradient(145deg,#493019,#302013);border-color:#74502b}
-.ico{font-size:56px;filter:drop-shadow(0 3px 2px #0006)}
+.topin img{width:54px;height:54px;object-fit:cover;border:2px solid #fff;border-radius:14px;box-shadow:0 3px 12px #002b6680}
+.top h1{font-size:25px;color:white}
+input,.ed select{background:#fff;border:1.5px solid #cbd8e8;color:#172b49;border-radius:14px;min-height:50px}
+input::placeholder{color:#8998aa}
+input:focus-visible{border-color:#0875e8;outline:2px solid #8fc5ff}
+.add,.btn1{background:linear-gradient(135deg,#ffdc35,#ffbd00);color:#19365d;border-radius:14px;font-weight:800;box-shadow:0 3px 0 #d99c00}
+.btn2{border-color:#0875e8;color:#0755b5;background:#fff}
+h2{font-size:16px;color:#075fc2;font-weight:800;margin:22px 0 9px}
+ul{background:transparent;border:0;border-radius:0;overflow:visible}
+li{padding:13px 14px;border-color:#e1e8f1;min-height:60px}
+.nm{font-size:17px}
+.chk{width:28px;height:28px;border:2.5px solid #0875e8}
+.done .chk{background:#ffd51f;border-color:#ffd51f;color:#18375f}
+.x{font-size:23px;color:#718096}
+.q{color:#075fc2}
+.topin .back{color:#fff}
+.who2{padding:14px 2px;color:#718096;font-size:13px}
+.who2 b{color:#075fc2}
+.acts{gap:18px;padding:4px 0 12px;flex-wrap:wrap}
+.acts button{color:#52677f;font-size:14px}
+.grid{gap:13px;padding:10px 0 18px}
+.tile{min-height:150px;border-radius:23px;color:#fff;background:linear-gradient(145deg,#168bff,#0755bd);border:1px solid #49a5ff;box-shadow:0 4px 0 #06418e,0 8px 18px #244c761c}
+.tile.t1{background:linear-gradient(145deg,#0878e8,#034cae)}
+.tile.t2{background:linear-gradient(145deg,#1267c5,#06418b)}
+.tile.t3{background:linear-gradient(145deg,#e7f1ff,#d4e5fa);border-color:#c4d8f0;color:#0755b5;box-shadow:0 4px 0 #b8cce3}
+.ico{font-size:54px;filter:drop-shadow(0 3px 2px #00336a45)}
 .ln{font-size:19px}
-.tile.plus{background:#21150e;border:2px dashed #f5a34c;color:#ffb45d;box-shadow:none}
-.cp{background:#302116;border:1px solid #4a3524;border-radius:18px}
-.cp .t{color:#c9ad8e}
+.tile.plus{background:#fff;border:2px dashed #0875e8;color:#075fc2;box-shadow:none}
+.cp,.manage-card{background:#fff;border:1px solid #d7e0ec;border-radius:18px;box-shadow:0 3px 12px #31577c0b}
+.cp .t{color:#718096}
 .hab{gap:9px;margin:10px 0 16px}
-.chip{background:#382719;border-color:#58402a}
-.cn{color:#fff0dc}
-.cx{color:#c8a987}
-.empty{color:#c6aa8a}
+.chip{background:#f3f7fc;border-color:#d7e0ec}
+.cn{color:#172b49}
+.cx{color:#718096}
+.empty{color:#718096}
 .login{padding-top:30px}
-.login p{color:#d0b89c}
-.code{color:#ffc15c}
-.ig .ib{background:#24180f;border-color:#57402b}
-#st{bottom:calc(100px + env(safe-area-inset-bottom));background:#ffbf4b;color:#24170e}
-/* Barra inferior fija: Inicio / Categorías / Productos */
-.bottom-nav{
- position:fixed;z-index:20;left:0;right:0;bottom:0;
- padding:9px 12px calc(9px + env(safe-area-inset-bottom));
- background:linear-gradient(180deg,#0868d6,#03377f);
- border-top:1px solid #268cff;box-shadow:0 -5px 20px #0006;
- display:grid;grid-template-columns:repeat(3,1fr);gap:8px
-}
-.nav-btn{
- border:0;background:transparent;color:#dcecff;border-radius:16px;
- min-height:58px;display:flex;flex-direction:column;align-items:center;
- justify-content:center;gap:3px;font:inherit;font-size:12px;font-weight:700;cursor:pointer
-}
+.login p{color:#718096}
+.code{color:#075fc2}
+.ig .ib{background:#f4f8fd;border-color:#d7e0ec}
+#st{bottom:calc(96px + env(safe-area-inset-bottom));background:#0755b5;color:#fff}
+.bottom-nav{position:fixed;z-index:20;left:0;right:0;bottom:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#0878e8,#06469c);border-top:1px solid #5aaaff;box-shadow:0 -5px 20px #173b641f;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.nav-btn{border:0;background:transparent;color:#e5f2ff;border-radius:15px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .nav-btn .nav-ico{font-size:24px;line-height:1.1}
-.nav-btn.active{background:linear-gradient(145deg,#0a83ff,#0750b5);color:#ffdc36;box-shadow:inset 0 0 0 1px #58adff,0 2px 8px #001e50}
-.page-title{font-size:23px;font-weight:800;margin:12px 0 5px;color:#fff0dc}
-.page-sub{font-size:14px;color:#c4a98a;margin:0 0 16px}
-.manage-card{background:#302116;border:1px solid #4a3524;border-radius:18px;padding:14px;margin:10px 0}
-.manage-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #493322}
+.nav-btn.active{background:linear-gradient(145deg,#fff,#e7f2ff);color:#0755b5;box-shadow:inset 0 0 0 1px #b5d8ff,0 2px 8px #00356d40}
+.page-title{font-size:23px;font-weight:800;margin:12px 0 5px;color:#17385f}
+.page-sub{font-size:14px;color:#718096;margin:0 0 16px}
+.manage-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #e5ebf3}
 .manage-row:last-child{border-bottom:0}
 .manage-row .grow{flex:1;min-width:0}
 .manage-row strong{display:block;font-size:16px}
-.manage-row small{color:#c3a789}
-.pill-action{border:1px solid #65492e;background:#3b291a;color:#ffbd65;border-radius:12px;padding:8px 11px;font:inherit;font-weight:700}
-.section-kicker{font-size:12px;color:#c3a789;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
-@media(max-width:380px){.top h1{font-size:21px}.tile{min-height:138px}.ico{font-size:48px}.wrap{padding-left:14px;padding-right:14px}}
-
+.manage-row small{color:#718096}
+.pill-action{border:1px solid #b9d4f3;background:#edf5ff;color:#0755b5;border-radius:12px;padding:8px 11px;font:inherit;font-weight:700}
+.section-kicker{font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+/* Productos de la lista en tarjetas cuadradas */
+.products-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:0;padding:0;background:transparent;border:0}
+.product-card{position:relative;min-width:0;min-height:150px;aspect-ratio:1/0.92;background:#fff;border:1px solid #d5dfeb;border-radius:19px;padding:13px 10px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;box-shadow:0 3px 10px #284c7010;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+.product-card:active{background:#f0f6ff}
+.product-card.done{background:#e7f1ff;border:2px solid #0875e8}
+.product-card .prod-icon{font-size:38px;line-height:1.1}
+.product-card .nm{font-size:16px;font-weight:700;text-align:center;line-height:1.2;overflow-wrap:anywhere;flex:0 1 auto}
+.product-card .q{font-size:13px;color:#718096}
+.product-card .chk{position:absolute;top:9px;right:9px;width:25px;height:25px;background:#fff;border-color:#9aabc0}
+.product-card.done .chk{background:#0875e8;border-color:#0875e8;color:#fff}
+.product-card .card-edit-hint{font-size:10px;color:#8293a8;margin-top:1px}
+.edit-overlay{position:fixed;inset:0;z-index:60;background:#10243d80;display:flex;align-items:center;justify-content:center;padding:20px}
+.edit-dialog{width:min(100%,440px);background:#fff;border-radius:22px;padding:0 18px 18px;box-shadow:0 18px 60px #001b3b55;color:#172b49}
+.edit-title{margin:0 -18px 16px;padding:17px 18px;background:linear-gradient(120deg,#0755b5,#087cf0);color:#fff;border-radius:22px 22px 0 0;font-size:20px;font-weight:800}
+.edit-dialog label{display:block;font-size:13px;font-weight:700;color:#52677f;margin:11px 0 5px}
+.edit-dialog input,.edit-dialog select{width:100%;min-height:48px;background:#f8fbff;color:#172b49;border:1.5px solid #cbd8e8;border-radius:12px;padding:10px 12px;font:inherit}
+.edit-actions{display:flex;gap:10px;margin-top:18px}
+.edit-actions button{flex:1;min-height:47px}
+@media(max-width:380px){.top h1{font-size:21px}.tile{min-height:136px}.ico{font-size:47px}.wrap{padding-left:13px;padding-right:13px}.product-card{min-height:137px}}
 </style>
 </head>
 <body>
@@ -321,8 +325,14 @@ const toggle=i=>col().doc(i.id).update({done:!i.done});
 const del=i=>col().doc(i.id).delete();
 const clearDone=()=>{const b=db.batch();items.filter(i=>i.done).forEach(i=>b.delete(col().doc(i.id)));b.commit()};
 
+function productIcon(i){
+  const n=(i.name||'').toLowerCase(),c=catKey(i);
+  const map=[['leche','🥛'],['yogur','🥣'],['cerveza','🍺'],['agua','💧'],['pan','🥖'],['tomate','🍅'],['manzana','🍎'],['plátano','🍌'],['platano','🍌'],['queso','🧀'],['huevo','🥚'],['pollo','🍗'],['pescado','🐟'],['café','☕'],['cafe','☕'],['arroz','🍚'],['pasta','🍝'],['sal','🧂'],['mejill','🦪'],['lavavajillas','🧼'],['detergente','🧴'],['papel','🧻'],['aceite','🫒'],['zumo','🧃']];
+  for(const [k,v] of map)if(n.includes(k))return v;
+  return ({'Frutas y verduras':'🥦','Lácteos y huevos':'🥛','Carne y pescado':'🥩','Panadería y dulces':'🥐','Despensa':'🛒','Bebidas':'🥤','Limpieza e higiene':'🧽','Otros':'📦'})[c]||'🛍️';
+}
 function editRow(i){
-  const n=$('input',{value:i.name,'aria-label':'Nombre'});
+  const n=$('input',{value:i.name,'aria-label':'Nombre del producto'});
   const q=$('input',{value:i.qty||'',placeholder:'Cantidad (ej. 2, 500 g)','aria-label':'Cantidad'});
   const c=$('select',{'aria-label':'Categoría'},cats().map(o=>$('option',o===i.cat?{selected:''}:{},o)));
   const save=()=>{
@@ -333,19 +343,29 @@ function editRow(i){
     render();
   };
   [n,q].forEach(x=>x.addEventListener('keydown',e=>{if(e.key==='Enter')save()}));
-  setTimeout(()=>n.focus(),0);
-  return $('li',{class:'ed',onclick:e=>e.stopPropagation()},n,q,c,
-    $('button',{class:'add',onclick:save},'Guardar'),
-    $('button',{class:'btn2',onclick:()=>{editing=null;render()}},'Cancelar'));
+  const overlay=$('div',{class:'edit-overlay',onclick:e=>{if(e.target===overlay){editing=null;render()}}});
+  const dialog=$('div',{class:'edit-dialog',onclick:e=>e.stopPropagation()},
+    $('div',{class:'edit-title'},'✎  Editar producto'),
+    $('label',{},'Nombre del producto'),n,
+    $('label',{},'Cantidad'),q,
+    $('label',{},'Categoría'),c,
+    $('div',{class:'edit-actions'},$('button',{class:'btn1',onclick:save},'Guardar'),$('button',{class:'btn2',onclick:()=>{editing=null;render()}},'Cancelar')));
+  overlay.append(dialog);setTimeout(()=>n.focus(),0);return overlay;
 }
+let longPressTimer=null,longPressTriggered=false;
 function row(i){
   if(editing===i.id)return editRow(i);
-  return $('li',{class:i.done?'done':'',onclick:()=>toggle(i)},
-    $('span',{class:'chk'},'✓'),
-    $('span',{class:'nm'},i.name),
-    i.qty?$('span',{class:'q'},i.qty):'',
-    $('button',{class:'x','aria-label':'Editar '+i.name,onclick:e=>{e.stopPropagation();editing=i.id;render()}},'✎'),
-    $('button',{class:'x','aria-label':'Borrar '+i.name,onclick:e=>{e.stopPropagation();del(i)}},'×'));
+  const card=$('div',{class:'product-card'+(i.done?' done':''),role:'button','aria-label':i.name+'. Mantén pulsado para editar.'});
+  const startPress=()=>{longPressTriggered=false;clearTimeout(longPressTimer);longPressTimer=setTimeout(()=>{longPressTriggered=true;editing=i.id;render()},550)};
+  const endPress=()=>clearTimeout(longPressTimer);
+  card.addEventListener('pointerdown',startPress);
+  card.addEventListener('pointerup',endPress);
+  card.addEventListener('pointerleave',endPress);
+  card.addEventListener('pointercancel',endPress);
+  card.addEventListener('contextmenu',e=>{e.preventDefault();longPressTriggered=true;editing=i.id;render()});
+  card.addEventListener('click',()=>{if(longPressTriggered){longPressTriggered=false;return}toggle(i)});
+  card.append($('span',{class:'chk'},'✓'),$('span',{class:'prod-icon','aria-hidden':'true'},productIcon(i)),$('span',{class:'nm'},i.name),i.qty?$('span',{class:'q'},i.qty):$('span',{class:'q'},' '));
+  return card;
 }
 
 function listBar(l){return $('div',{class:'top'},$('div',{class:'topin'},
@@ -461,14 +481,14 @@ function renderList(){
   if(!items.length)body.push($('div',{class:'empty'},'La lista está vacía. Escribe arriba lo primero que necesitéis.'));
   for(const c of cats()){
     const g=pend.filter(i=>catKey(i)===c);
-    if(g.length)body.push($('h2',{},c),$('ul',{},g.map(row)));
+    if(g.length)body.push($('h2',{},c),$('div',{class:'products-grid'},g.map(row)));
   }
-  if(done.length)body.push($('div',{class:'head'},$('h2',{},'Comprados ('+done.length+')'),$('button',{class:'clr',onclick:clearDone},'Quitar comprados')),$('ul',{},done.map(row)));
+  if(done.length)body.push($('div',{class:'head'},$('h2',{},'Comprados ('+done.length+')'),$('button',{class:'clr',onclick:clearDone},'Quitar comprados')),$('div',{class:'products-grid'},done.map(row)));
   app.replaceChildren(listBar(l),$('div',{class:'wrap'},
     $('div',{class:'acts'},$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:()=>{showIcons=!showIcons;render()}},'Icono'),$('button',{onclick:delList},'Borrar lista')),
     iconsPanel(),
     $('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
-    habs(),body,bottomNav()));
+    habs(),$('p',{class:'page-sub'},'Marca un producto con un toque. Mantén pulsado para editarlo.'),body,bottomNav()));
 }
 function render(){
   const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
