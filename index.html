@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1E5B45">
+<meta name="theme-color" content="#FFE3A3">
 <title>Family Luismaux</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <style>
-:root{--bg:#F4F6F2;--card:#fff;--ink:#17231D;--mute:#6B7A71;--pine:#1E5B45;--sun:#F2C230;--line:#DDE4DE;--red:#C8412B;color-scheme:light}
-@media(prefers-color-scheme:dark){:root{--bg:#101713;--card:#18221C;--ink:#E8EFEA;--mute:#8FA096;--pine:#3E9774;--line:#26332B;--red:#E5735E;color-scheme:dark}}
+:root{--bg:#FFF6E5;--card:#FFFCF6;--ink:#3B2A1A;--mute:#8A7560;--pine:#B35A12;--acc:#F5A55A;--sun:#FFD66B;--line:#F3E1C4;--red:#C8412B;--band:#FFE3A3;--t0:#FFE0B8;--t1:#FFEDB5;--t2:#FFD9C0;--t3:#FFF3CC;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#1F1710;--card:#2A2016;--ink:#F6EAD9;--mute:#B7A088;--pine:#F5A860;--acc:#E9954A;--line:#3D2E20;--red:#E5735E;--band:#3A2C14;--t0:#4A3220;--t1:#4A3E1C;--t2:#4A2E24;--t3:#443A22;color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif}
 body{min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -22,7 +22,7 @@ h1{font-size:30px;font-weight:800;margin:0;letter-spacing:-.02em}
 .bar{display:flex;gap:8px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0 12px}
 input{font:inherit;font-size:17px;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);width:100%}
 input:focus-visible,button:focus-visible{outline:3px solid var(--sun);outline-offset:1px}
-.add{background:var(--pine);color:#fff;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:17px;padding:0 20px;cursor:pointer}
+.add{background:var(--acc);color:#2B1B0C;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:17px;padding:0 20px;cursor:pointer}
 h2{font-size:15px;font-weight:600;color:var(--pine);margin:22px 0 6px}
 ul{list-style:none;margin:0;padding:0;background:var(--card);border-radius:14px;border:1px solid var(--line)}
 li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);cursor:pointer}
@@ -39,7 +39,7 @@ li:first-child{border-top:0}
 .login{max-width:420px;margin:6vh auto;padding:0 20px;display:grid;gap:12px}
 .login p{color:var(--mute);margin:0 0 6px;line-height:1.4}
 .btn2{background:none;border:1.5px solid var(--pine);color:var(--pine);border-radius:12px;font:inherit;font-weight:600;font-size:16px;padding:12px;cursor:pointer}
-.btn1{background:var(--pine);color:#fff;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:17px;padding:14px;cursor:pointer}
+.btn1{background:var(--acc);color:#2B1B0C;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:17px;padding:14px;cursor:pointer}
 .err{color:var(--red);font-size:14px}
 .code{font-size:22px;font-weight:800;letter-spacing:.08em;color:var(--pine)}
 
@@ -59,16 +59,29 @@ li.ed{flex-wrap:wrap;cursor:default;gap:8px}
 .chip{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;background:var(--card);overflow:hidden}
 .cn{font:inherit;font-size:15px;padding:7px 4px 7px 14px;border:0;background:none;color:var(--ink);cursor:pointer}
 .cx{border:0;background:none;color:var(--mute);padding:4px 12px 4px 6px;cursor:pointer;font-size:16px}
-.top{background:#1E5B45;color:#fff;padding:12px 16px}
+.top{background:var(--band);color:var(--ink);padding:12px 16px}
 .topin{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .topin img{border-radius:10px;display:block}
-.top h1{font-size:22px;color:#fff}
+.top h1{font-size:22px;color:var(--ink)}
 .who2{font-size:13px;color:var(--mute);padding:12px 0 8px}
 .who2 b{color:var(--pine);letter-spacing:.08em;font-size:15px}
 .who2 button{background:none;border:0;color:var(--pine);font:inherit;text-decoration:underline;padding:0;cursor:pointer}
 .cp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:6px 0 10px}
 .cp .t{font-size:13px;color:var(--mute);margin:0 0 6px;display:block}
 .cp .cn{cursor:default}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:6px 0 14px}
+.tile{border:0;border-radius:22px;padding:18px 12px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:var(--ink);font:inherit;box-shadow:0 2px 0 rgba(179,90,18,.14)}
+.t0{background:var(--t0)}.t1{background:var(--t1)}.t2{background:var(--t2)}.t3{background:var(--t3)}
+.ico{font-size:60px;line-height:1}
+.ln{font-weight:800;font-size:18px;text-align:center;overflow-wrap:anywhere}
+.tile.plus{background:transparent;border:2px dashed var(--acc);color:var(--pine);box-shadow:none}
+.tile.plus .ico{font-size:46px}
+.back{background:none;border:0;font-size:36px;line-height:1;color:var(--ink);padding:0 6px 4px 0;cursor:pointer}
+.ico2{font-size:30px;line-height:1}
+.topin h1{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ig{display:flex;flex-wrap:wrap;gap:8px}
+.ib{font-size:26px;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px;cursor:pointer}
+@media(prefers-reduced-motion:no-preference){.tile{transition:transform .1s}.tile:active{transform:scale(.97)}}
 #st{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:13px;display:none}
 @media(prefers-reduced-motion:no-preference){li{transition:background .15s}li:active{background:var(--line)}}
 </style>
@@ -106,7 +119,7 @@ function catOf(n){n=n.toLowerCase();let best="Otros",len=0;for(const c in CATS)f
 const $=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){if(x.startsWith('on'))e.addEventListener(x.slice(2),a[x]);else if(x==='class')e.className=a[x];else e.setAttribute(x,a[x])}k.flat().forEach(c=>e.append(c));return e};
 const app=document.getElementById('app');
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,editing=null,cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,inList=false,showIcons=false,editing=null,cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -134,10 +147,9 @@ async function start(){
   if(unsubL)unsubL();
   unsubL=lcol().orderBy('ts').onSnapshot(s=>{
     lists=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(!lists.length){if(!s.metadata.fromCache)lcol().add({name:'Compra',ts:Date.now()});render();return}
-    if(!lists.some(l=>l.id===cur)){cur=lists[0].id;ls('lista',cur);subItems()}
-    else if(!unsub)subItems();
-    render();
+    if(!lists.length){if(!s.metadata.fromCache)lcol().add({name:'Compra',icon:'🛒',ts:Date.now()});render();return}
+    if(inList&&!lists.some(l=>l.id===cur))goHome();
+    else render();
   },e=>login('Error de acceso: '+e.message));
   if(unsubH)unsubH();
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());render()},()=>{});
@@ -159,10 +171,16 @@ const hcol=()=>db.collection('familias').doc(code).collection('historial');
 const key=n=>n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';
 const lcol=()=>db.collection('familias').doc(code).collection('listas');
 const col=()=>lcol().doc(cur).collection('items');
-function pick(id){editing=null;cur=id;ls('lista',id);subItems();render()}
+const ICONS=['🛒','🥦','🍎','🥖','🥩','🐟','🥛','🧴','🧹','💊','🔧','👕','🎁','🐶','🏠','🍕','🥤','📝'];
+const KW=[['🛒',['compra','super','mercado']],['💊',['farmacia','medic']],['🔧',['ferret','bricol','herramient']],['🧹',['limpieza','casa','hogar']],['👕',['ropa','zapat']],['🎁',['regalo','cumple']],['🐶',['mascota','perro','gato']],['🥦',['verdura','fruta']],['🥖',['panader','pan']],['🥩',['carnic','carne']],['🥤',['bebida','fiesta']],['🍕',['cena','comida','restaurante']]];
+function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.includes(k)))return e;return '📝'}
+function pick(id){editing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;history.pushState({l:1},'');render()}
+function goHome(){inList=false;showIcons=false;editing=null;if(unsub){unsub();unsub=null}items=[];render()}
+function back(){if(history.state&&history.state.l)history.back();else goHome()}
+window.addEventListener('popstate',goHome);
 function newList(){
   const n=(prompt('Nombre de la lista (ej. Farmacia)')||'').trim();if(!n)return;
-  const r=lcol().doc();r.set({name:n,ts:Date.now()});pick(r.id);
+  const r=lcol().doc();r.set({name:n,icon:autoIcon(n),ts:Date.now()});pick(r.id);
 }
 function renameList(){
   const l=lists.find(x=>x.id===cur);
@@ -177,7 +195,7 @@ function delList(){
 const cats=()=>[...Object.keys(CATS),...custom.map(c=>c.name),'Otros'];
 const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
 function topBar(){return $('div',{class:'top'},$('div',{class:'topin'},$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')))}
-function salir(){ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
+function salir(){inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
 function catsPanel(){
   if(!showCats)return '';
   const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
@@ -192,12 +210,6 @@ function catsPanel(){
     custom.length?$('div',{class:'hab'},custom.map(c=>$('span',{class:'chip'},$('span',{class:'cn'},c.name),
       $('button',{class:'cx','aria-label':'Borrar categoría '+c.name,onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.'))ccol().doc(c.id).delete()}},'×')))):'',
     $('div',{class:'bar',style:'position:static;padding:4px 0 0'},inp,$('button',{class:'add',onclick:addC},'Crear')));
-}
-function tabs(){
-  const t=lists.map(l=>$('button',{class:'tab'+(l.id===cur?' on':''),onclick:()=>pick(l.id)},l.name));
-  t.push($('button',{class:'tab plus','aria-label':'Nueva lista',onclick:newList},'+ Lista'));
-  const has=lists.some(l=>l.id===cur);
-  return $('div',{},$('div',{class:'tabs'},t),$('div',{class:'acts'},has?[$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:delList},'Borrar lista')]:'',$('button',{onclick:()=>{showCats=!showCats;render()}},'Categorías')),catsPanel());
 }
 function add(raw){
   raw=raw.trim();if(!raw||!cur)return;
@@ -256,8 +268,26 @@ function row(i){
     $('button',{class:'x','aria-label':'Borrar '+i.name,onclick:e=>{e.stopPropagation();del(i)}},'×'));
 }
 
-function render(){
-  const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
+function listBar(l){return $('div',{class:'top'},$('div',{class:'topin'},
+  $('button',{class:'back','aria-label':'Volver a las listas',onclick:back},'‹'),
+  $('span',{class:'ico2'},l.icon||'📝'),$('h1',{},l.name)))}
+function iconsPanel(){
+  if(!showIcons)return '';
+  return $('div',{class:'cp'},$('span',{class:'t'},'Elige un icono para esta lista'),
+    $('div',{class:'ig'},ICONS.map(e=>$('button',{class:'ib',onclick:()=>{showIcons=false;lcol().doc(cur).update({icon:e});render()}},e))));
+}
+function renderHome(){
+  const tiles=lists.map((l,i)=>$('button',{class:'tile t'+(i%4),onclick:()=>pick(l.id)},
+    $('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name)));
+  tiles.push($('button',{class:'tile plus',onclick:newList},$('span',{class:'ico'},'+'),$('span',{class:'ln'},'Nueva lista')));
+  app.replaceChildren(topBar(),$('div',{class:'wrap'},
+    $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
+    $('div',{class:'grid'},tiles),
+    $('div',{class:'acts'},$('button',{onclick:()=>{showCats=!showCats;render()}},'Categorías')),
+    catsPanel()));
+}
+function renderList(){
+  const l=lists.find(x=>x.id===cur)||{name:'Lista',icon:'📝'};
   const input=$('input',{id:'in',placeholder:'Añadir producto (ej. 2 leche)',enterkeyhint:'done',list:'sug',autocomplete:'off'});
   const names=[...new Set([...hist.map(h=>h.name),...items.map(i=>i.name)])];
   const dl=$('datalist',{id:'sug'},names.map(n=>$('option',{value:n})));
@@ -271,11 +301,15 @@ function render(){
     if(g.length)body.push($('h2',{},c),$('ul',{},g.map(row)));
   }
   if(done.length)body.push($('div',{class:'head'},$('h2',{},'Comprados ('+done.length+')'),$('button',{class:'clr',onclick:clearDone},'Quitar comprados')),$('ul',{},done.map(row)));
-  app.replaceChildren(topBar(),$('div',{class:'wrap'},
-    $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
-    tabs(),$('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
-    habs(),
-    body));
+  app.replaceChildren(listBar(l),$('div',{class:'wrap'},
+    $('div',{class:'acts'},$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:()=>{showIcons=!showIcons;render()}},'Icono'),$('button',{onclick:delList},'Borrar lista')),
+    iconsPanel(),
+    $('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
+    habs(),body));
+}
+function render(){
+  const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
+  inList?renderList():renderHome();
   keep.forEach(k=>{if(!k)return;const e=document.getElementById(k[0]);if(e){e.value=k[1];if(k[2])e.focus()}});
 }
 
