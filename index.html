@@ -36,7 +36,7 @@ li:first-child{border-top:0}
 .head{display:flex;justify-content:space-between;align-items:center}
 .clr{background:none;border:0;color:var(--red);font:inherit;font-size:14px;cursor:pointer;margin-top:18px}
 .empty{color:var(--mute);text-align:center;padding:48px 8px}
-.login{max-width:420px;margin:12vh auto;padding:0 20px;display:grid;gap:12px}
+.login{max-width:420px;margin:6vh auto;padding:0 20px;display:grid;gap:12px}
 .login p{color:var(--mute);margin:0 0 6px;line-height:1.4}
 .btn2{background:none;border:1.5px solid var(--pine);color:var(--pine);border-radius:12px;font:inherit;font-weight:600;font-size:16px;padding:12px;cursor:pointer}
 .btn1{background:var(--pine);color:#fff;border:0;border-radius:12px;font:inherit;font-weight:600;font-size:17px;padding:14px;cursor:pointer}
@@ -59,6 +59,16 @@ li.ed{flex-wrap:wrap;cursor:default;gap:8px}
 .chip{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;background:var(--card);overflow:hidden}
 .cn{font:inherit;font-size:15px;padding:7px 4px 7px 14px;border:0;background:none;color:var(--ink);cursor:pointer}
 .cx{border:0;background:none;color:var(--mute);padding:4px 12px 4px 6px;cursor:pointer;font-size:16px}
+.top{background:#1E5B45;color:#fff;padding:12px 16px}
+.topin{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.topin img{border-radius:10px;display:block}
+.top h1{font-size:22px;color:#fff}
+.who2{font-size:13px;color:var(--mute);padding:12px 0 8px}
+.who2 b{color:var(--pine);letter-spacing:.08em;font-size:15px}
+.who2 button{background:none;border:0;color:var(--pine);font:inherit;text-decoration:underline;padding:0;cursor:pointer}
+.cp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:6px 0 10px}
+.cp .t{font-size:13px;color:var(--mute);margin:0 0 6px;display:block}
+.cp .cn{cursor:default}
 #st{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:13px;display:none}
 @media(prefers-reduced-motion:no-preference){li{transition:background .15s}li:active{background:var(--line)}}
 </style>
@@ -91,13 +101,12 @@ const CATS={
 "Bebidas":["agua","cerveza","vino","refresco","zumo","cola","infusión"],
 "Limpieza e higiene":["detergente","lejía","lejia","papel higiénico","papel de cocina","jabón","jabon","champú","champu","fregasuelos","suavizante","gel","pasta de dientes","bolsas","estropajo","servilletas"]
 };
-const ORDER=[...Object.keys(CATS),"Otros"];
 function catOf(n){n=n.toLowerCase();let best="Otros",len=0;for(const c in CATS)for(const k of CATS[c])if(n.includes(k)&&k.length>len){best=c;len=k.length}return best}
 
 const $=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){if(x.startsWith('on'))e.addEventListener(x.slice(2),a[x]);else if(x==='class')e.className=a[x];else e.setAttribute(x,a[x])}k.flat().forEach(c=>e.append(c));return e};
 const app=document.getElementById('app');
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,editing=null,cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,editing=null,cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -108,8 +117,7 @@ function login(msg){
     me=n;code=c;ls('yo',n);ls('fam',c);start();
   };
   const create=()=>{const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<8;i++)r+=a[Math.floor(Math.random()*a.length)];cd.value=r;nm.focus()};
-  app.replaceChildren($('div',{class:'login'},
-    $('h1',{},'Lista de la compra'),
+  app.replaceChildren(topBar(),$('div',{class:'login'},
     $('p',{},'Toda la familia con el mismo código ve y edita la misma lista. Crea un código nuevo y pásalo a los demás, o escribe el que ya tengas.'),
     nm,cd,
     $('button',{class:'btn2',onclick:create},'Crear código nuevo'),
@@ -133,6 +141,8 @@ async function start(){
   },e=>login('Error de acceso: '+e.message));
   if(unsubH)unsubH();
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());render()},()=>{});
+  if(unsubC)unsubC();
+  unsubC=ccol().orderBy('ts').onSnapshot(s=>{custom=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
   render();
 }
 function subItems(){
@@ -144,6 +154,7 @@ function subItems(){
   },e=>login('Error de acceso: '+e.message));
 }
 
+const ccol=()=>db.collection('familias').doc(code).collection('categorias');
 const hcol=()=>db.collection('familias').doc(code).collection('historial');
 const key=n=>n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'x';
 const lcol=()=>db.collection('familias').doc(code).collection('listas');
@@ -163,11 +174,30 @@ function delList(){
   if(!confirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?'))return;
   const b=db.batch();items.forEach(i=>b.delete(col().doc(i.id)));b.delete(lcol().doc(cur));b.commit();
 }
+const cats=()=>[...Object.keys(CATS),...custom.map(c=>c.name),'Otros'];
+const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
+function topBar(){return $('div',{class:'top'},$('div',{class:'topin'},$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')))}
+function salir(){ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
+function catsPanel(){
+  if(!showCats)return '';
+  const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
+  const addC=()=>{
+    const n=inp.value.trim();if(!n)return;
+    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return alert('Esa categoría ya existe.');
+    ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),ts:Date.now()});inp.value='';
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
+  return $('div',{class:'cp'},
+    $('span',{class:'t'},custom.length?'Tus categorías':'Aún no has creado ninguna. Luego asígnalas a un producto con el lápiz ✎.'),
+    custom.length?$('div',{class:'hab'},custom.map(c=>$('span',{class:'chip'},$('span',{class:'cn'},c.name),
+      $('button',{class:'cx','aria-label':'Borrar categoría '+c.name,onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.'))ccol().doc(c.id).delete()}},'×')))):'',
+    $('div',{class:'bar',style:'position:static;padding:4px 0 0'},inp,$('button',{class:'add',onclick:addC},'Crear')));
+}
 function tabs(){
   const t=lists.map(l=>$('button',{class:'tab'+(l.id===cur?' on':''),onclick:()=>pick(l.id)},l.name));
   t.push($('button',{class:'tab plus','aria-label':'Nueva lista',onclick:newList},'+ Lista'));
   const has=lists.some(l=>l.id===cur);
-  return $('div',{},$('div',{class:'tabs'},t),has?$('div',{class:'acts'},$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:delList},'Borrar lista')):'');
+  return $('div',{},$('div',{class:'tabs'},t),$('div',{class:'acts'},has?[$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:delList},'Borrar lista')]:'',$('button',{onclick:()=>{showCats=!showCats;render()}},'Categorías')),catsPanel());
 }
 function add(raw){
   raw=raw.trim();if(!raw||!cur)return;
@@ -180,7 +210,8 @@ function put(n,q,c){
   const k=key(n);
   if(items.some(i=>!i.done&&key(i.name)===k))return;
   const ex=items.find(i=>i.done&&key(i.name)===k);
-  c=c||catOf(n);
+  const hh=hist.find(x=>key(x.name)===k);
+  c=c||(hh&&hh.cat&&cats().includes(hh.cat)?hh.cat:null)||catOf(n);
   if(ex)col().doc(ex.id).update({done:false});
   else col().add({name:n,qty:q,cat:c,done:false,by:me,ts:Date.now()});
   hcol().doc(k).set({name:n,qty:q,cat:c,count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
@@ -201,11 +232,11 @@ const clearDone=()=>{const b=db.batch();items.filter(i=>i.done).forEach(i=>b.del
 function editRow(i){
   const n=$('input',{value:i.name,'aria-label':'Nombre'});
   const q=$('input',{value:i.qty||'',placeholder:'Cantidad (ej. 2, 500 g)','aria-label':'Cantidad'});
-  const c=$('select',{'aria-label':'Categoría'},ORDER.map(o=>$('option',o===i.cat?{selected:''}:{},o)));
+  const c=$('select',{'aria-label':'Categoría'},cats().map(o=>$('option',o===i.cat?{selected:''}:{},o)));
   const save=()=>{
     const nm=n.value.trim();if(!nm)return n.focus();
     editing=null;
-    hcol().doc(key(nm)).update({cat:c.value}).catch(()=>{});
+    hcol().doc(key(nm)).set({name:nm.charAt(0).toUpperCase()+nm.slice(1),cat:c.value,count:firebase.firestore.FieldValue.increment(0)},{merge:true});
     col().doc(i.id).update({name:nm.charAt(0).toUpperCase()+nm.slice(1),qty:q.value.trim(),cat:c.value});
     render();
   };
@@ -226,7 +257,7 @@ function row(i){
 }
 
 function render(){
-  const o=document.getElementById('in'),val=o?o.value:'',foc=!!o&&document.activeElement===o;
+  const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
   const input=$('input',{id:'in',placeholder:'Añadir producto (ej. 2 leche)',enterkeyhint:'done',list:'sug',autocomplete:'off'});
   const names=[...new Set([...hist.map(h=>h.name),...items.map(i=>i.name)])];
   const dl=$('datalist',{id:'sug'},names.map(n=>$('option',{value:n})));
@@ -235,17 +266,17 @@ function render(){
   const pend=items.filter(i=>!i.done),done=items.filter(i=>i.done);
   const body=[];
   if(!items.length)body.push($('div',{class:'empty'},'La lista está vacía. Escribe arriba lo primero que necesitéis.'));
-  for(const c of ORDER){
-    const g=pend.filter(i=>i.cat===c);
+  for(const c of cats()){
+    const g=pend.filter(i=>catKey(i)===c);
     if(g.length)body.push($('h2',{},c),$('ul',{},g.map(row)));
   }
   if(done.length)body.push($('div',{class:'head'},$('h2',{},'Comprados ('+done.length+')'),$('button',{class:'clr',onclick:clearDone},'Quitar comprados')),$('ul',{},done.map(row)));
-  app.replaceChildren($('div',{class:'wrap'},
-    $('header',{},$('h1',{},'Compra'),$('div',{class:'who'},me+' · ',$('div',{class:'code'},code),$('button',{onclick:()=>{ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();hist=[];cur=null;login()}},'Cambiar'))),
+  app.replaceChildren(topBar(),$('div',{class:'wrap'},
+    $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
     tabs(),$('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
     habs(),
     body));
-  input.value=val;if(foc)input.focus();
+  keep.forEach(k=>{if(!k)return;const e=document.getElementById(k[0]);if(e){e.value=k[1];if(k[2])e.focus()}});
 }
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
