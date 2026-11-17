@@ -1,4 +1,4 @@
-const N='compra-v1';
+const N='family-luismaux-v2';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{

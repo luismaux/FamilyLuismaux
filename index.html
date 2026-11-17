@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FFE3A3">
+<meta name="theme-color" content="#0757B8">
 <title>Family Luismaux</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -84,6 +84,86 @@ li.ed{flex-wrap:wrap;cursor:default;gap:8px}
 @media(prefers-reduced-motion:no-preference){.tile{transition:transform .1s}.tile:active{transform:scale(.97)}}
 #st{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:99px;font-size:13px;display:none}
 @media(prefers-reduced-motion:no-preference){li{transition:background .15s}li:active{background:var(--line)}}
+
+/* ===== Family Luismaux: nueva identidad visual ===== */
+:root{
+ --bg:#21150e;--card:#302116;--ink:#fff1dc;--mute:#c5aa8b;
+ --pine:#ffb347;--acc:#ffb12e;--sun:#ffd51f;--line:#493322;
+ --red:#ff7668;--band:#382713;--t0:#075fd0;--t1:#064aa9;
+ --t2:#073b83;--t3:#352315;color-scheme:dark
+}
+html,body{background:var(--bg);color:var(--ink)}
+body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.wrap{max-width:620px;padding:12px 18px calc(112px + env(safe-area-inset-bottom))}
+.top{background:linear-gradient(110deg,#352511,#493116);padding:15px 18px;border-bottom:1px solid #60421f}
+.topin{max-width:620px}
+.topin img{width:54px;height:54px;object-fit:cover;border:2px solid #ffd35c;border-radius:14px;box-shadow:0 3px 12px #0008}
+.top h1{font-size:25px;color:#fff3df}
+input,.ed select{background:#302116;border:1.5px solid #523a27;color:#fff1dc;border-radius:15px;min-height:52px}
+input::placeholder{color:#a58b72}
+input:focus-visible{border-color:#ffb347;outline:2px solid #ffb347}
+.add,.btn1{background:linear-gradient(135deg,#ffc34c,#f28c32);color:#29190d;border-radius:15px;font-weight:800;box-shadow:0 3px 0 #8c4a18}
+.btn2{border-color:#ffb347;color:#ffc16b}
+h2{font-size:17px;color:#ffb45d;font-weight:800;margin:24px 0 9px}
+ul{background:#302116;border:1px solid #4a3524;border-radius:19px;overflow:hidden}
+li{padding:15px 14px;border-color:#493322;min-height:64px}
+.nm{font-size:18px}
+.chk{width:29px;height:29px;border:2.5px solid #ffad4e}
+.done .chk{background:#ffd51f;border-color:#ffd51f;color:#21150e}
+.x{font-size:24px;color:#c9a987}
+.q{color:#ffc16b}
+.topin .back{color:#fff1dc}
+.who2{padding:14px 2px;color:#c7a987;font-size:13px}
+.who2 b{color:#ffbd53}
+.acts{gap:19px;padding:4px 0 12px;flex-wrap:wrap}
+.acts button{color:#d7b894;font-size:14px}
+.grid{gap:14px;padding:10px 0 18px}
+.tile{min-height:160px;border-radius:25px;color:white;background:linear-gradient(145deg,#087bf0,#0346a5);border:1px solid #2389ff;box-shadow:0 5px 0 #032c69,0 10px 22px #0005}
+.tile.t1{background:linear-gradient(145deg,#0878e8,#03449a)}
+.tile.t2{background:linear-gradient(145deg,#073e86,#06295b)}
+.tile.t3{background:linear-gradient(145deg,#493019,#302013);border-color:#74502b}
+.ico{font-size:56px;filter:drop-shadow(0 3px 2px #0006)}
+.ln{font-size:19px}
+.tile.plus{background:#21150e;border:2px dashed #f5a34c;color:#ffb45d;box-shadow:none}
+.cp{background:#302116;border:1px solid #4a3524;border-radius:18px}
+.cp .t{color:#c9ad8e}
+.hab{gap:9px;margin:10px 0 16px}
+.chip{background:#382719;border-color:#58402a}
+.cn{color:#fff0dc}
+.cx{color:#c8a987}
+.empty{color:#c6aa8a}
+.login{padding-top:30px}
+.login p{color:#d0b89c}
+.code{color:#ffc15c}
+.ig .ib{background:#24180f;border-color:#57402b}
+#st{bottom:calc(100px + env(safe-area-inset-bottom));background:#ffbf4b;color:#24170e}
+/* Barra inferior fija: Inicio / Categorías / Productos */
+.bottom-nav{
+ position:fixed;z-index:20;left:0;right:0;bottom:0;
+ padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+ background:linear-gradient(180deg,#0868d6,#03377f);
+ border-top:1px solid #268cff;box-shadow:0 -5px 20px #0006;
+ display:grid;grid-template-columns:repeat(3,1fr);gap:8px
+}
+.nav-btn{
+ border:0;background:transparent;color:#dcecff;border-radius:16px;
+ min-height:58px;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:3px;font:inherit;font-size:12px;font-weight:700;cursor:pointer
+}
+.nav-btn .nav-ico{font-size:24px;line-height:1.1}
+.nav-btn.active{background:linear-gradient(145deg,#0a83ff,#0750b5);color:#ffdc36;box-shadow:inset 0 0 0 1px #58adff,0 2px 8px #001e50}
+.page-title{font-size:23px;font-weight:800;margin:12px 0 5px;color:#fff0dc}
+.page-sub{font-size:14px;color:#c4a98a;margin:0 0 16px}
+.manage-card{background:#302116;border:1px solid #4a3524;border-radius:18px;padding:14px;margin:10px 0}
+.manage-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid #493322}
+.manage-row:last-child{border-bottom:0}
+.manage-row .grow{flex:1;min-width:0}
+.manage-row strong{display:block;font-size:16px}
+.manage-row small{color:#c3a789}
+.pill-action{border:1px solid #65492e;background:#3b291a;color:#ffbd65;border-radius:12px;padding:8px 11px;font:inherit;font-weight:700}
+.section-kicker{font-size:12px;color:#c3a789;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
+@media(max-width:380px){.top h1{font-size:21px}.tile{min-height:138px}.ico{font-size:48px}.wrap{padding-left:14px;padding-right:14px}}
+
 </style>
 </head>
 <body>
@@ -119,7 +199,7 @@ function catOf(n){n=n.toLowerCase();let best="Otros",len=0;for(const c in CATS)f
 const $=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){if(x.startsWith('on'))e.addEventListener(x.slice(2),a[x]);else if(x==='class')e.className=a[x];else e.setAttribute(x,a[x])}k.flat().forEach(c=>e.append(c));return e};
 const app=document.getElementById('app');
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,inList=false,showIcons=false,editing=null,cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,inList=false,showIcons=false,editing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -174,7 +254,7 @@ const col=()=>lcol().doc(cur).collection('items');
 const ICONS=['🛒','🥦','🍎','🥖','🥩','🐟','🥛','🧴','🧹','💊','🔧','👕','🎁','🐶','🏠','🍕','🥤','📝'];
 const KW=[['🛒',['compra','super','mercado']],['💊',['farmacia','medic']],['🔧',['ferret','bricol','herramient']],['🧹',['limpieza','casa','hogar']],['👕',['ropa','zapat']],['🎁',['regalo','cumple']],['🐶',['mascota','perro','gato']],['🥦',['verdura','fruta']],['🥖',['panader','pan']],['🥩',['carnic','carne']],['🥤',['bebida','fiesta']],['🍕',['cena','comida','restaurante']]];
 function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.includes(k)))return e;return '📝'}
-function pick(id){editing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;history.pushState({l:1},'');render()}
+function pick(id){navView='home';editing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;history.pushState({l:1},'');render()}
 function goHome(){inList=false;showIcons=false;editing=null;if(unsub){unsub();unsub=null}items=[];render()}
 function back(){if(history.state&&history.state.l)history.back();else goHome()}
 window.addEventListener('popstate',goHome);
@@ -276,15 +356,98 @@ function iconsPanel(){
   return $('div',{class:'cp'},$('span',{class:'t'},'Elige un icono para esta lista'),
     $('div',{class:'ig'},ICONS.map(e=>$('button',{class:'ib',onclick:()=>{showIcons=false;lcol().doc(cur).update({icon:e});render()}},e))));
 }
+
+function bottomNav(){
+  const entries=[
+    ['home','⌂','Inicio'],
+    ['categories','▦','Categorías'],
+    ['products','▤','Productos']
+  ];
+  return $('nav',{class:'bottom-nav','aria-label':'Navegación principal'},
+    entries.map(([id,ico,label])=>$('button',{
+      class:'nav-btn'+(navView===id?' active':''),
+      'aria-current':navView===id?'page':'false',
+      onclick:()=>{navView=id;inList=false;editing=null;if(unsub){unsub();unsub=null}items=[];render()}
+    },$('span',{class:'nav-ico','aria-hidden':'true'},ico),$('span',{},label)))
+  );
+}
 function renderHome(){
-  const tiles=lists.map((l,i)=>$('button',{class:'tile t'+(i%4),onclick:()=>pick(l.id)},
+  const tiles=lists.map((l,i)=>$('button',{class:'tile t'+(i%4),onclick:()=>{navView='home';pick(l.id)}},
     $('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name)));
   tiles.push($('button',{class:'tile plus',onclick:newList},$('span',{class:'ico'},'+'),$('span',{class:'ln'},'Nueva lista')));
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
+    $('div',{class:'page-title'},'¿Qué vamos a comprar?'),
+    $('p',{class:'page-sub'},'Tus listas, siempre a mano y sincronizadas con la familia.'),
     $('div',{class:'grid'},tiles),
-    $('div',{class:'acts'},$('button',{onclick:()=>{showCats=!showCats;render()}},'Categorías')),
-    catsPanel()));
+    $('div',{class:'section-kicker'},'Accesos rápidos'),
+    $('div',{class:'manage-card'},$('div',{class:'manage-row'},
+      $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
+      $('button',{class:'pill-action',onclick:newList},'Nueva +')))),
+    bottomNav());
+}
+function renderCategoriesPage(){
+  const inp=$('input',{id:'cin',placeholder:'Nombre de la nueva categoría','aria-label':'Nueva categoría'});
+  const addC=()=>{
+    const n=inp.value.trim();if(!n)return;
+    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return alert('Esa categoría ya existe.');
+    ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),ts:Date.now()});
+    inp.value='';
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
+  const systemCats=Object.keys(CATS);
+  const customRows=custom.length?custom.map(c=>$('div',{class:'manage-row'},
+    $('span',{class:'ico2'},'🏷️'),
+    $('div',{class:'grow'},$('strong',{},c.name),$('small',{},'Categoría personalizada')),
+    $('button',{class:'pill-action',onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.'))ccol().doc(c.id).delete()}},'Borrar'))):[
+      $('p',{class:'page-sub'},'Todavía no has creado categorías personalizadas.')
+    ];
+  app.replaceChildren(topBar(),$('div',{class:'wrap'},
+    $('div',{class:'page-title'},'Categorías'),
+    $('p',{class:'page-sub'},'Organiza tus productos por secciones para encontrarlo todo fácilmente.'),
+    $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addC},'Crear')),
+    $('div',{class:'manage-card'},$('div',{class:'section-kicker'},'Categorías disponibles'),
+      systemCats.map((c,i)=>$('div',{class:'manage-row'},$('span',{class:'ico2'},['🥬','🥛','🥩','🥖','🧺','🥤','🧽'][i]||'📦'),
+        $('div',{class:'grow'},$('strong',{},c),$('small',{},'Categoría integrada'))))),
+    $('div',{class:'manage-card'},$('div',{class:'section-kicker'},'Tus categorías'),
+      customRows)),
+    bottomNav());
+}
+function addProductFromCatalog(name,qty,cat){
+  const target=cur&&lists.some(l=>l.id===cur)?cur:(lists[0]&&lists[0].id);
+  if(!target)return alert('Crea primero una lista de compra.');
+  const normalized=name.charAt(0).toUpperCase()+name.slice(1);
+  const productKey=key(normalized);
+  const ref=lcol().doc(target).collection('items');
+  ref.get().then(s=>{
+    const found=s.docs.find(d=>d.data().name&&key(d.data().name)===productKey&&!d.data().done);
+    if(!found)ref.add({name:normalized,qty:qty||'',cat:cat||catOf(normalized),done:false,by:me,ts:Date.now()});
+    else found.ref.update({done:false});
+    hcol().doc(productKey).set({name:normalized,qty:qty||'',cat:cat||catOf(normalized),count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
+    cur=target;ls('lista',target);
+  }).catch(e=>alert('No se pudo añadir el producto: '+e.message));
+}
+function renderProductsPage(){
+  const inp=$('input',{id:'pin',placeholder:'Añadir producto (ej. 2 leche)','aria-label':'Nombre del producto'});
+  const addP=()=>{
+    const raw=inp.value.trim();if(!raw)return;
+    let qty='',name=raw;const m=raw.match(/^(\d+(?:[.,]\d+)?\s?(?:kg|g|l|ud|uds)?)\s+(.+)$/i);
+    if(m){qty=m[1];name=m[2]}
+    addProductFromCatalog(name,qty);inp.value='';
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')addP()});
+  const productRows=hist.filter(x=>x.name).slice(0,40);
+  app.replaceChildren(topBar(),$('div',{class:'wrap'},
+    $('div',{class:'page-title'},'Productos'),
+    $('p',{class:'page-sub'},'Añade rápidamente productos a tu lista desde tu catálogo habitual.'),
+    $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
+    $('div',{class:'section-kicker'},'Productos habituales'),
+    productRows.length?$('div',{class:'manage-card'},productRows.map(p=>$('div',{class:'manage-row'},
+      $('span',{class:'ico2'},'🛍️'),
+      $('div',{class:'grow'},$('strong',{},p.name),$('small',{},p.cat||'Otros')),
+      $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat)},'+ Añadir')))):
+      $('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
+    bottomNav());
 }
 function renderList(){
   const l=lists.find(x=>x.id===cur)||{name:'Lista',icon:'📝'};
@@ -305,11 +468,14 @@ function renderList(){
     $('div',{class:'acts'},$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:()=>{showIcons=!showIcons;render()}},'Icono'),$('button',{onclick:delList},'Borrar lista')),
     iconsPanel(),
     $('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
-    habs(),body));
+    habs(),body,bottomNav()));
 }
 function render(){
   const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
-  inList?renderList():renderHome();
+  if(inList)renderList();
+  else if(navView==='categories')renderCategoriesPage();
+  else if(navView==='products')renderProductsPage();
+  else renderHome();
   keep.forEach(k=>{if(!k)return;const e=document.getElementById(k[0]);if(e){e.value=k[1];if(k[2])e.focus()}});
 }
 
