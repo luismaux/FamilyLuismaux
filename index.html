@@ -400,7 +400,7 @@ const app=document.getElementById('app');
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
 const APP_VERSION='16';
-let catOrder=[],dragging=false;
+let catOrder=[];
 let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
@@ -816,19 +816,20 @@ function categoryCard(c,isSystem){
   return card;
 }
 // Arrastrar tarjetas por el asa ⠿ para cambiar el orden de las categorías.
+const dragActive=()=>!!document.querySelector('.category-card.dragging');
 function enableCategoryDrag(grid){
   grid.querySelectorAll('.drag-h').forEach(h=>{
     h.addEventListener('contextmenu',e=>e.preventDefault());
     h.addEventListener('pointerdown',e=>{
-      if(e.button>0||dragging)return;
+      if(e.button>0||dragActive())return;
       e.preventDefault();e.stopPropagation();
       clearTimeout(categoryPressTimer);
       const card=h.closest('.category-card');
+      const pid=e.pointerId;
       const r0=card.getBoundingClientRect();
       const gx=e.clientX-r0.left,gy=e.clientY-r0.top;
-      let px=e.clientX,py=e.clientY,raf=0;
-      dragging=true;
-      try{h.setPointerCapture(e.pointerId)}catch(x){}
+      let px=e.clientX,py=e.clientY,raf=0,finished=false;
+      try{h.setPointerCapture(pid)}catch(x){}
       card.classList.add('dragging');
       const place=()=>{
         card.style.transform='none';
@@ -847,23 +848,40 @@ function enableCategoryDrag(grid){
         }
       };
       const tick=()=>{
+        if(finished)return;
+        if(!card.isConnected)return finish(false);
         const top=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--headh'))||84)+50;
         const dy=py<top?-14:(py>innerHeight-120?14:0);
         if(dy){scrollBy(0,dy);reorder();place()}
         raf=requestAnimationFrame(tick);
       };
-      const move=ev=>{px=ev.clientX;py=ev.clientY;reorder();place()};
-      const end=ev=>{
+      const move=ev=>{if(ev.pointerId!==pid)return;px=ev.clientX;py=ev.clientY;reorder();place()};
+      const stopTouch=ev=>{if(ev.cancelable)ev.preventDefault()};
+      // Termina SIEMPRE el arrastre, pase lo que pase (soltar, cancelar, perder el dedo, cambiar de app).
+      function finish(save){
+        if(finished)return;finished=true;
         cancelAnimationFrame(raf);
-        h.removeEventListener('pointermove',move);h.removeEventListener('pointerup',end);h.removeEventListener('pointercancel',end);
-        try{h.releasePointerCapture(e.pointerId)}catch(x){}
+        ['pointermove','pointerup','pointercancel'].forEach(t=>window.removeEventListener(t,t==='pointermove'?move:onEnd,true));
+        h.removeEventListener('lostpointercapture',onEnd);
+        window.removeEventListener('blur',onEnd);document.removeEventListener('visibilitychange',onEnd);
+        document.removeEventListener('touchmove',stopTouch,{capture:true});
+        clearTimeout(safety);
+        try{h.releasePointerCapture(pid)}catch(x){}
         card.classList.remove('dragging');card.style.transform='';
-        dragging=false;
-        const names=[...grid.children].map(c=>c.dataset.name);
-        if(names.join('|')!==cats().join('|'))saveOrder(names);
-        render();
-      };
-      h.addEventListener('pointermove',move);h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+        if(save!==false&&grid.isConnected){
+          const names=[...grid.children].map(c=>c.dataset.name);
+          if(names.join('|')!==cats().join('|'))saveOrder(names);
+        }
+        if(grid.isConnected)render();
+      }
+      function onEnd(ev){if(ev&&ev.pointerId!==undefined&&ev.pointerId!==pid)return;finish(true)}
+      window.addEventListener('pointermove',move,true);
+      window.addEventListener('pointerup',onEnd,true);
+      window.addEventListener('pointercancel',onEnd,true);
+      h.addEventListener('lostpointercapture',onEnd);
+      window.addEventListener('blur',onEnd);document.addEventListener('visibilitychange',onEnd);
+      document.addEventListener('touchmove',stopTouch,{capture:true,passive:false});
+      const safety=setTimeout(()=>finish(true),60000);
       place();raf=requestAnimationFrame(tick);
     });
   });
@@ -983,7 +1001,7 @@ function renderList(){
 // (así no se pierde lo que se está escribiendo). Al cerrar el cuadro se redibuja con los datos nuevos.
 function measureHead(){const h=document.querySelector('.top');if(h)document.documentElement.style.setProperty('--headh',h.offsetHeight+'px')}
 addEventListener('resize',measureHead);
-function softRender(){if(dragging||document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
+function softRender(){if(dragActive()||document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
 function render(){
   const keep=['in','cin','pin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
   if(inList)renderList();
