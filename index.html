@@ -95,7 +95,7 @@ li.ed{flex-wrap:wrap;cursor:default;gap:8px}
 html{background:#0755b5} body{background:var(--bg);color:var(--ink)}
 body{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
 .wrap{max-width:620px;padding:12px 16px calc(108px + env(safe-area-inset-bottom))}
-.top{background:linear-gradient(120deg,#0755b5,#087cf0);padding:14px 18px;border-bottom:1px solid #3c9bff;box-shadow:0 3px 12px #164b8520}
+.top{position:sticky;top:0;z-index:50;background:linear-gradient(120deg,#0755b5,#087cf0);padding:14px 18px;border-bottom:1px solid #3c9bff;box-shadow:0 3px 12px #164b8520}
 .topin{max-width:620px}
 .topin img{width:54px;height:54px;object-fit:cover;border:2px solid #fff;border-radius:14px;box-shadow:0 3px 12px #002b6680}
 .top h1{font-size:25px;color:white}
@@ -213,7 +213,7 @@ function catOf(n){n=n.toLowerCase();let best="Otros",len=0;for(const c in CATS)f
 const $=(t,a={},...k)=>{const e=document.createElement(t);for(const x in a){if(x.startsWith('on'))e.addEventListener(x.slice(2),a[x]);else if(x==='class')e.className=a[x];else e.setAttribute(x,a[x])}k.flat().forEach(c=>e.append(c));return e};
 const app=document.getElementById('app');
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],unsubC,showCats=false,inList=false,showIcons=false,editing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -248,7 +248,7 @@ async function start(){
   if(unsubH)unsubH();
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());render()},()=>{});
   if(unsubC)unsubC();
-  unsubC=ccol().orderBy('ts').onSnapshot(s=>{custom=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
+  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);render()},()=>{});
   render();
 }
 function subItems(){
@@ -416,33 +416,69 @@ function renderHome(){
       $('button',{class:'pill-action',onclick:newList},'Nueva +')))),
     bottomNav());
 }
+const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
+const DEFAULT_CATEGORY_ICONS={'Frutas y verduras':'🥬','Lácteos y huevos':'🥛','Carne y pescado':'🥩','Panadería y dulces':'🥖','Despensa':'🧺','Bebidas':'🥤','Limpieza e higiene':'🧽','Otros':'📦'};
+const categoryIcon=name=>catIcons[name]||DEFAULT_CATEGORY_ICONS[name]||'🏷️';
+function editCategory(c,isSystem){
+  categoryEditing={...c,isSystem};render();
+}
+function categoryEditor(){
+  if(!categoryEditing)return '';
+  const c=categoryEditing, name=$('input',c.isSystem?{value:c.name,placeholder:'Nombre de la categoría',disabled:''}:{value:c.name,placeholder:'Nombre de la categoría'});
+  let selected=c.icon||categoryIcon(c.name);
+  const picker=$('div',{class:'cat-icon-picker'},CATEGORY_ICON_OPTIONS.map(icon=>$('button',{type:'button',class:icon===selected?'selected':'',title:'Usar '+icon,onclick:e=>{selected=icon;picker.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.textContent===icon))}},icon)));
+  const close=()=>{categoryEditing=null;render()};
+  const save=()=>{
+    const newName=(name.value||'').trim();if(!newName)return name.focus();
+    if(!c.isSystem&&custom.some(x=>x.id!==c.id&&x.name.toLowerCase()===newName.toLowerCase()))return alert('Ya existe una categoría con ese nombre.');
+    if(c.isSystem){ccol().doc('sys-'+key(c.name)).set({system:true,name:c.name,icon:selected,ts:Date.now()},{merge:true});}
+    else{ccol().doc(c.id).update({name:newName.charAt(0).toUpperCase()+newName.slice(1),icon:selected});}
+    close();
+  };
+  const overlay=$('div',{class:'cat-edit-overlay',onclick:e=>{if(e.target===overlay)close()}});
+  const actions=[$('button',{class:'btn1',onclick:save},'Guardar'),$('button',{class:'btn2',onclick:close},'Cancelar')];
+  if(!c.isSystem)actions.unshift($('button',{class:'btn2',onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.')){ccol().doc(c.id).delete();close()}}},'Borrar'));
+  const dialog=$('div',{class:'cat-edit-dialog',onclick:e=>e.stopPropagation()},
+    $('div',{class:'cat-edit-title'},'✎  Editar categoría'),
+    $('label',{},'Nombre de la categoría'),name,
+    c.isSystem?$('small',{},'Las categorías integradas mantienen su nombre para no alterar la clasificación de productos existentes.'):'',
+    $('label',{},'Selecciona un icono'),picker,
+    $('div',{class:'cat-edit-actions'},actions));
+  overlay.append(dialog);return overlay;
+}
+let categoryPressTimer=null,categoryLongPressTriggered=false;
+function categoryCard(c,isSystem,countLabel){
+  const card=$('button',{class:'category-card',type:'button','aria-label':c.name+'. Mantén pulsado para editar.'},
+    $('span',{class:'cat-ico','aria-hidden':'true'},c.icon||categoryIcon(c.name)),
+    $('strong',{},c.name),$('small',{},countLabel|| (isSystem?'Categoría integrada':'Categoría personalizada')));
+  const start=()=>{categoryLongPressTriggered=false;clearTimeout(categoryPressTimer);categoryPressTimer=setTimeout(()=>{categoryLongPressTriggered=true;editCategory(c,isSystem)},550)};
+  const stop=()=>clearTimeout(categoryPressTimer);
+  card.addEventListener('pointerdown',start);card.addEventListener('pointerup',stop);card.addEventListener('pointerleave',stop);card.addEventListener('pointercancel',stop);
+  card.addEventListener('contextmenu',e=>{e.preventDefault();categoryLongPressTriggered=true;editCategory(c,isSystem)});
+  card.addEventListener('click',()=>{if(categoryLongPressTriggered){categoryLongPressTriggered=false;return}});
+  return card;
+}
 function renderCategoriesPage(){
   const inp=$('input',{id:'cin',placeholder:'Nombre de la nueva categoría','aria-label':'Nueva categoría'});
   const addC=()=>{
     const n=inp.value.trim();if(!n)return;
     if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return alert('Esa categoría ya existe.');
-    ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),ts:Date.now()});
-    inp.value='';
+    ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),icon:'🏷️',ts:Date.now()});inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
-  const systemCats=Object.keys(CATS);
-  const customRows=custom.length?custom.map(c=>$('div',{class:'manage-row'},
-    $('span',{class:'ico2'},'🏷️'),
-    $('div',{class:'grow'},$('strong',{},c.name),$('small',{},'Categoría personalizada')),
-    $('button',{class:'pill-action',onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.'))ccol().doc(c.id).delete()}},'Borrar'))):[
-      $('p',{class:'page-sub'},'Todavía no has creado categorías personalizadas.')
-    ];
+  const systemCats=Object.keys(CATS).map(name=>({name,icon:categoryIcon(name)}));
+  const customCats=custom.map(c=>({...c,icon:c.icon||'🏷️'}));
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Categorías'),
-    $('p',{class:'page-sub'},'Organiza tus productos por secciones para encontrarlo todo fácilmente.'),
+    $('p',{class:'page-sub'},'Mantén pulsada una tarjeta para editar su nombre o cambiar su icono.'),
     $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addC},'Crear')),
-    $('div',{class:'manage-card'},$('div',{class:'section-kicker'},'Categorías disponibles'),
-      systemCats.map((c,i)=>$('div',{class:'manage-row'},$('span',{class:'ico2'},['🥬','🥛','🥩','🥖','🧺','🥤','🧽'][i]||'📦'),
-        $('div',{class:'grow'},$('strong',{},c),$('small',{},'Categoría integrada'))))),
-    $('div',{class:'manage-card'},$('div',{class:'section-kicker'},'Tus categorías'),
-      customRows)),
-    bottomNav());
+    $('div',{class:'section-kicker'},'Categorías disponibles'),
+    $('div',{class:'category-grid'},systemCats.map(c=>categoryCard(c,true))),
+    $('div',{class:'section-kicker'},'Tus categorías'),
+    customCats.length?$('div',{class:'category-grid'},customCats.map(c=>categoryCard(c,false))):$('p',{class:'page-sub'},'Todavía no has creado categorías personalizadas.'),
+    categoryEditor()),bottomNav());
 }
+
 function addProductFromCatalog(name,qty,cat){
   const target=cur&&lists.some(l=>l.id===cur)?cur:(lists[0]&&lists[0].id);
   if(!target)return alert('Crea primero una lista de compra.');
