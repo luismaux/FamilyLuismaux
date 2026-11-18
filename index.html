@@ -300,6 +300,10 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
  .cat-icon-picker button{font-size:23px}
 }
 
+.target-row{display:flex;align-items:center;gap:10px;margin:8px 0 2px;font-size:14px;font-weight:700;color:#17385f}
+.target-row select{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid #c9d7e8;border-radius:12px;background:#fff;color:#17385f}
+#msg-toast{position:fixed;left:50%;width:max-content;bottom:calc(112px + env(safe-area-inset-bottom));transform:translate(-50%,10px);visibility:hidden;opacity:0;pointer-events:none;z-index:2147483646;background:#17385f;color:#fff;border-radius:999px;padding:12px 20px;font-size:15px;font-weight:700;box-shadow:0 6px 22px #10243d66;max-width:90vw;text-align:center;transition:opacity .16s,transform .16s}
+#msg-toast.show{visibility:visible;opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -395,14 +399,14 @@ async function start(){
   if(unsubL)unsubL();
   unsubL=lcol().orderBy('ts').onSnapshot(s=>{
     lists=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(!lists.length){if(!s.metadata.fromCache)lcol().add({name:'Compra',icon:'🛒',ts:Date.now()});render();return}
+    if(!lists.length){if(!s.metadata.fromCache)lcol().add({name:'Compra',icon:'🛒',ts:Date.now()});softRender();return}
     if(inList&&!lists.some(l=>l.id===cur))goHome();
-    else render();
+    else softRender();
   },e=>login('Error de acceso: '+e.message));
   if(unsubH)unsubH();
-  unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());render()},()=>{});
+  unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());softRender()},()=>{});
   if(unsubC)unsubC();
-  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);render()},()=>{});
+  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
   render();
 }
 function subItems(){
@@ -410,7 +414,7 @@ function subItems(){
   unsub=col().orderBy('ts').onSnapshot(s=>{
     items=s.docs.map(d=>({id:d.id,...d.data()}));
     document.getElementById('st').style.display=s.metadata.hasPendingWrites?'block':'none';
-    render();
+    softRender();
   },e=>login('Error de acceso: '+e.message));
 }
 
@@ -424,53 +428,45 @@ const KW=[['🛒',['compra','super','mercado']],['💊',['farmacia','medic']],['
 function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.includes(k)))return e;return '📝'}
 function pick(id){navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
 function goHome(){inList=false;navView='home';showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
+// ---- Botón Atrás de Android: "Pulsa nuevamente para salir" ----
+// Historial de la app: [base, guarda]. Con la guarda puesta, el primer Atrás cae en
+// "base" y lo capturamos para enseñar el aviso. En ese momento NO volvemos a poner la
+// guarda: así el segundo Atrás (dentro de 2,5 s) lo gestiona el sistema y cierra la app.
+// Si pasa el tiempo, o el usuario toca la pantalla, o vuelve a la app, se repone la guarda.
 let exitArmed=false,exitTimer=null;
-function isMainScreen(){return !inList&&navView==='home'&&!editing&&!categoryEditing}
+const hasGuard=()=>!!(history.state&&history.state.fl==='guard');
+function ensureGuard(){if(!hasGuard()){try{history.pushState({fl:'guard'},'')}catch(e){}}}
 function showExitToast(){
   let toast=document.getElementById('exit-toast');
   if(!toast){toast=document.createElement('div');toast.id='exit-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast)}
   toast.textContent='Pulsa nuevamente para salir';
   toast.classList.remove('show');
-  // Forzar un nuevo ciclo de pintado para que el aviso aparezca también en Android WebView/PWA.
   void toast.offsetWidth;
   toast.classList.add('show');
-  clearTimeout(exitTimer);
-  exitTimer=setTimeout(()=>{toast.classList.remove('show');exitArmed=false},2500);
 }
-function ensureAppHistory(){
-  try{history.pushState({familyLuismaux:true,guard:Date.now()},'',location.href)}catch(e){}
+function disarmExit(){
+  clearTimeout(exitTimer);exitArmed=false;
+  const t=document.getElementById('exit-toast');if(t)t.classList.remove('show');
+  ensureGuard();
 }
-function back(){
-  if(!isMainScreen()){goHome();exitArmed=false;ensureAppHistory();return}
-  if(exitArmed){
-    clearTimeout(exitTimer);
-    const toast=document.getElementById('exit-toast');if(toast)toast.classList.remove('show');
-    // Deja que el siguiente Atrás del sistema cierre la PWA.
-    history.back();
-    return;
-  }
-  exitArmed=true;
-  showExitToast();
+function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTimer=setTimeout(disarmExit,2500)}
+// Cierra primero diálogos y paneles abiertos; devuelve true si cerró alguno.
+function closeOverlays(){
+  if(editing||categoryEditing||showIcons){editing=null;categoryEditing=null;showIcons=false;render();return true}
+  return false;
 }
+// Flecha ‹ de la pantalla de una lista: no toca el historial.
+function back(){if(!closeOverlays())goHome()}
 window.addEventListener('popstate',()=>{
-  if(!isMainScreen()){
-    goHome();
-    exitArmed=false;
-    ensureAppHistory();
-    return;
-  }
-  if(exitArmed){
-    clearTimeout(exitTimer);
-    const toast=document.getElementById('exit-toast');if(toast)toast.classList.remove('show');
-    // No se vuelve a insertar una entrada: permite al sistema cerrar la aplicación.
-    return;
-  }
-  exitArmed=true;
-  showExitToast();
-  ensureAppHistory();
+  if(hasGuard())return;
+  if(closeOverlays()){ensureGuard();return}
+  if(inList||navView!=='home'){goHome();ensureGuard();return}
+  armExit();
 });
-// Entrada de protección inicial para capturar el primer Atrás en la PWA instalada.
-if(!history.state||!history.state.familyLuismaux)ensureAppHistory();
+document.addEventListener('pointerdown',()=>{if(exitArmed)disarmExit()},true);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&exitArmed)disarmExit()});
+try{if(!hasGuard())history.replaceState({fl:'base'},'')}catch(e){}
+ensureGuard();
 function newList(){
   const n=(prompt('Nombre de la lista (ej. Farmacia)')||'').trim();if(!n)return;
   const r=lcol().doc();r.set({name:n,icon:autoIcon(n),ts:Date.now()});pick(r.id);
@@ -485,7 +481,7 @@ function delList(){
   if(!confirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?'))return;
   const b=db.batch();items.forEach(i=>b.delete(col().doc(i.id)));b.delete(lcol().doc(cur));b.commit();
 }
-const cats=()=>[...Object.keys(CATS),...custom.map(c=>c.name),'Otros'];
+const cats=()=>[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
 const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
 function topBar(){return $('div',{class:'top'},$('div',{class:'topin'},$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')))}
 function salir(){inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
@@ -621,17 +617,35 @@ const categoryIcon=name=>catIcons[name]||DEFAULT_CATEGORY_ICONS[name]||'🏷️'
 function editCategory(c,isSystem){
   categoryEditing={...c,isSystem};render();
 }
+async function renameCategoryEverywhere(c,nm,icon){
+  const refs=[];
+  const collect=q=>q.get({source:'server'}).then(r=>r.docs.forEach(d=>refs.push(d.ref)));
+  await Promise.all([
+    ...lists.map(l=>collect(lcol().doc(l.id).collection('items').where('cat','==',c.name))),
+    collect(hcol().where('cat','==',c.name))
+  ]);
+  for(let i=0;i<refs.length;i+=400){
+    const b=db.batch();refs.slice(i,i+400).forEach(r=>b.update(r,{cat:nm}));await b.commit();
+  }
+  await ccol().doc(c.id).update({name:nm,icon});
+}
 function categoryEditor(){
   if(!categoryEditing)return '';
   const c=categoryEditing, name=$('input',c.isSystem?{value:c.name,placeholder:'Nombre de la categoría',disabled:''}:{value:c.name,placeholder:'Nombre de la categoría'});
   let selected=c.icon||categoryIcon(c.name);
   const picker=$('div',{class:'cat-icon-picker'},CATEGORY_ICON_OPTIONS.map(icon=>$('button',{type:'button',class:icon===selected?'selected':'',title:'Usar '+icon,onclick:e=>{selected=icon;picker.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.textContent===icon))}},icon)));
   const close=()=>{categoryEditing=null;render()};
-  const save=()=>{
+  let saving=false;
+  const save=async()=>{
+    if(saving)return;
     const newName=(name.value||'').trim();if(!newName)return name.focus();
-    if(!c.isSystem&&custom.some(x=>x.id!==c.id&&x.name.toLowerCase()===newName.toLowerCase()))return alert('Ya existe una categoría con ese nombre.');
-    if(c.isSystem){ccol().doc('sys-'+key(c.name)).set({system:true,name:c.name,icon:selected,ts:Date.now()},{merge:true});}
-    else{ccol().doc(c.id).update({name:newName.charAt(0).toUpperCase()+newName.slice(1),icon:selected});}
+    const nm=newName.charAt(0).toUpperCase()+newName.slice(1);
+    if(c.isSystem){ccol().doc('sys-'+key(c.name)).set({system:true,name:c.name,icon:selected,ts:Date.now()},{merge:true});close();return}
+    if(cats().some(x=>x!==c.name&&x.toLowerCase()===nm.toLowerCase()))return alert('Ya existe una categoría con ese nombre.');
+    if(nm===c.name){ccol().doc(c.id).update({icon:selected});close();return}
+    saving=true;
+    try{await renameCategoryEverywhere(c,nm,selected)}
+    catch(e){saving=false;return alert('No se pudo renombrar la categoría. Hace falta conexión para actualizar también sus productos. Inténtalo de nuevo.')}
     close();
   };
   const overlay=$('div',{class:'cat-edit-overlay',onclick:e=>{if(e.target===overlay)close()}});
@@ -678,18 +692,36 @@ function renderCategoriesPage(){
     categoryEditor()),bottomNav());
 }
 
-function addProductFromCatalog(name,qty,cat){
-  const target=cur&&lists.some(l=>l.id===cur)?cur:(lists[0]&&lists[0].id);
-  if(!target)return alert('Crea primero una lista de compra.');
+let msgTimer=null;
+function showMsg(t){
+  let e=document.getElementById('msg-toast');
+  if(!e){e=document.createElement('div');e.id='msg-toast';e.setAttribute('role','status');e.setAttribute('aria-live','polite');document.body.appendChild(e)}
+  e.textContent=t;e.classList.add('show');clearTimeout(msgTimer);msgTimer=setTimeout(()=>e.classList.remove('show'),2200);
+}
+let prodTarget=null;
+const prodTargetId=()=>(lists.find(l=>l.id===prodTarget)||lists.find(l=>l.id===cur)||lists[0]||{}).id;
+function targetRow(){
+  if(lists.length<2)return '';
+  const sel=$('select',{'aria-label':'Lista donde se añaden los productos',onchange:()=>{prodTarget=sel.value}},
+    lists.map(l=>$('option',l.id===prodTargetId()?{value:l.id,selected:''}:{value:l.id},(l.icon||'📝')+' '+l.name)));
+  return $('div',{class:'target-row'},$('span',{},'Añadir a:'),sel);
+}
+function addProductFromCatalog(name,qty,cat,target){
+  const t=lists.find(l=>l.id===target)||lists.find(l=>l.id===cur)||lists[0];
+  if(!t)return alert('Crea primero una lista de compra.');
   const normalized=name.charAt(0).toUpperCase()+name.slice(1);
   const productKey=key(normalized);
-  const ref=lcol().doc(target).collection('items');
+  const ref=lcol().doc(t.id).collection('items');
   ref.get().then(s=>{
-    const found=s.docs.find(d=>d.data().name&&key(d.data().name)===productKey&&!d.data().done);
-    if(!found)ref.add({name:normalized,qty:qty||'',cat:cat||catOf(normalized),done:false,by:me,ts:Date.now()});
-    else found.ref.update({done:false});
-    hcol().doc(productKey).set({name:normalized,qty:qty||'',cat:cat||catOf(normalized),count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
-    cur=target;ls('lista',target);
+    const same=s.docs.filter(d=>d.data().name&&key(d.data().name)===productKey);
+    if(same.some(d=>!d.data().done)){showMsg('Ya está en «'+t.name+'»');return}
+    const hh=hist.find(x=>key(x.name)===productKey);
+    const c=cat||(hh&&hh.cat&&cats().includes(hh.cat)?hh.cat:null)||catOf(normalized);
+    const done=same.find(d=>d.data().done);
+    if(done)done.ref.update({done:false});
+    else ref.add({name:normalized,qty:qty||'',cat:c,done:false,by:me,ts:Date.now()});
+    hcol().doc(productKey).set({name:normalized,qty:qty||'',cat:c,count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
+    showMsg('Añadido a «'+t.name+'»');
   }).catch(e=>alert('No se pudo añadir el producto: '+e.message));
 }
 function renderProductsPage(){
@@ -698,19 +730,19 @@ function renderProductsPage(){
     const raw=inp.value.trim();if(!raw)return;
     let qty='',name=raw;const m=raw.match(/^(\d+(?:[.,]\d+)?\s?(?:kg|g|l|ud|uds)?)\s+(.+)$/i);
     if(m){qty=m[1];name=m[2]}
-    addProductFromCatalog(name,qty);inp.value='';
+    addProductFromCatalog(name,qty,undefined,prodTargetId());inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addP()});
   const productRows=hist.filter(x=>x.name).slice(0,40);
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Productos'),
     $('p',{class:'page-sub'},'Añade rápidamente productos a tu lista desde tu catálogo habitual.'),
-    $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
+    targetRow(),$('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
     $('div',{class:'section-kicker'},'Productos habituales'),
     productRows.length?$('div',{class:'manage-card'},productRows.map(p=>$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛍️'),
       $('div',{class:'grow'},$('strong',{},p.name),$('small',{},p.cat||'Otros')),
-      $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat)},'+ Añadir')))):
+      $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir')))):
       $('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
     bottomNav());
 }
@@ -735,8 +767,11 @@ function renderList(){
     $('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
     habs(),$('p',{class:'page-sub'},'Marca un producto con un toque. Mantén pulsado para editarlo.'),body,bottomNav()));
 }
+// Los cambios que llegan de otros móviles no redibujan la pantalla si hay un cuadro de edición abierto
+// (así no se pierde lo que se está escribiendo). Al cerrar el cuadro se redibuja con los datos nuevos.
+function softRender(){if(document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
 function render(){
-  const keep=['in','cin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
+  const keep=['in','cin','pin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
   if(inList)renderList();
   else if(navView==='categories')renderCategoriesPage();
   else if(navView==='products')renderProductsPage();
