@@ -223,6 +223,16 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .category-card strong{font-size:13px;line-height:1.15;font-weight:800;overflow-wrap:anywhere}
 .category-card small{font-size:10px;line-height:1.15;color:#718096;overflow-wrap:anywhere}
 .category-card:focus-visible{outline:3px solid #8fc5ff;outline-offset:2px}
+.category-card{position:relative}
+.drag-h{position:absolute;top:3px;right:3px;width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#7d92ad;font-size:20px;line-height:1;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.drag-h:active{background:#e4effc}
+.category-card.dragging{z-index:20;cursor:grabbing;box-shadow:0 12px 28px #0a2a5a55;border-color:#0875e8;background:#fff;pointer-events:none;transition:none}
+.category-card.dragging .drag-h{pointer-events:auto}
+.prod-group{display:flex;align-items:center;gap:8px;margin:20px 0 6px;font-size:15px;font-weight:800;color:#17385f}
+.prod-group span{font-size:22px;line-height:1}
+.brand{display:flex;flex-direction:column;align-items:flex-end;min-width:0}
+.brand h1{flex:none;max-width:100%}
+.brand .ver{font-size:11px;font-weight:700;line-height:1;margin-top:3px;color:#ffffffc7;letter-spacing:.02em}
 .cat-edit-overlay{
   position:fixed;
   top:var(--vvtop,0px);
@@ -322,17 +332,6 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .new-by{font-size:12px;font-weight:700;background:#ffffff2e;border-radius:999px;padding:3px 10px}
 .nav-btn{position:relative}
 .nav-dot{position:absolute;top:6px;right:calc(50% - 24px);width:13px;height:13px;border-radius:50%;background:#e5322d;border:2px solid #0a63c9}
-
-/* Versión 16: marca y orden unificado de categorías */
-.brand-title{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:0;flex:1;gap:1px}
-.brand-title h1{align-self:flex-start}
-.app-version{align-self:flex-end;color:#dcecff;font-size:11px;font-weight:700;letter-spacing:.04em;line-height:1}
-.category-card{position:relative}
-.category-card .cat-drag-handle{position:absolute;top:5px;right:8px;z-index:2;color:#6d87a5;font-size:23px;line-height:1;cursor:grab;touch-action:none;padding:2px 5px;border-radius:7px;background:#edf5ff}
-.category-card.dragging{opacity:.62;transform:scale(.97);border:2px dashed #0875e8}
-.catalog-category{margin:12px 0 16px}
-.catalog-category .section-kicker{margin:8px 2px}
-@media(max-width:380px){.brand-title h1{font-size:22px}}
 </style>
 </head>
 <body>
@@ -400,7 +399,9 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},categoryOrder=[],unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
+const APP_VERSION='16';
+let catOrder=[],dragging=false;
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -437,7 +438,7 @@ async function start(){
   if(unsubH)unsubH();
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());softRender()},()=>{});
   if(unsubC)unsubC();
-  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));const orderDoc=docs.find(x=>x.id==='_order');categoryOrder=Array.isArray(orderDoc?.order)?orderDoc.order:[];custom=docs.filter(x=>!x.system&&x.id!=='_order');catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
+  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);try{const od=docs.find(x=>x.id==='orden');const a=od&&od.order?JSON.parse(od.order):[];catOrder=Array.isArray(a)?a.filter(n=>typeof n==='string'):[]}catch(e){catOrder=[]}catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
   render();
 }
 function subItems(){
@@ -534,11 +535,16 @@ function delList(){
   if(!confirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?'))return;
   const b=db.batch();items.forEach(i=>b.delete(col().doc(i.id)));b.delete(lcol().doc(cur));b.commit();
 }
+// Orden de categorías elegido por el usuario (se guarda como texto JSON en un documento 'orden').
 const cats=()=>{
-  const all=[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
-  const rank=new Map(categoryOrder.map((name,i)=>[name,i]));
-  return all.sort((a,b)=>(rank.has(a)?rank.get(a):9999)-(rank.has(b)?rank.get(b):9999));
+  const base=[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
+  const o=catOrder.filter(n=>base.includes(n));
+  return [...o,...base.filter(n=>!o.includes(n))];
 };
+function saveOrder(names){
+  catOrder=names;
+  ccol().doc('orden').set({system:true,ts:1,order:JSON.stringify(names)});
+}
 const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
 const SVGNS='http://www.w3.org/2000/svg';
 function gearIcon(){
@@ -548,8 +554,7 @@ function gearIcon(){
   v.appendChild(p);return v;
 }
 function topBar(){
-  const brand=$('div',{class:'brand-title'},$('h1',{},'Family Luismaux'),started?$('small',{class:'app-version'},'v.16'):'');
-  const kids=[$('img',{src:'icon-192.png',alt:'',width:40,height:40}),brand];
+  const kids=[$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('div',{class:'brand'},$('h1',{},'Family Luismaux'),$('span',{class:'ver'},'v.'+APP_VERSION))];
   if(started)kids.push($('button',{class:'gear-btn','aria-label':'Ajustes y copia de seguridad','aria-expanded':showSettings?'true':'false',
     onclick:()=>{showSettings=!showSettings;setMsg='';render()}},gearIcon()));
   return $('div',{class:'top'},$('div',{class:'topin'},kids),started&&showSettings?settingsPanel():'');
@@ -745,7 +750,7 @@ function renderHome(){
     $('div',{class:'manage-card'},$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
       $('button',{class:'pill-action',onclick:newList},'Nueva +'))),
-    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · v.16')),
+    ),
     bottomNav());
 }
 const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
@@ -765,6 +770,7 @@ async function renameCategoryEverywhere(c,nm,icon){
     const b=db.batch();refs.slice(i,i+400).forEach(r=>b.update(r,{cat:nm}));await b.commit();
   }
   await ccol().doc(c.id).update({name:nm,icon});
+  saveOrder(cats().map(n=>n===c.name?nm:n));
 }
 function categoryEditor(){
   if(!categoryEditing)return '';
@@ -797,40 +803,72 @@ function categoryEditor(){
   overlay.append(dialog);return overlay;
 }
 let categoryPressTimer=null,categoryLongPressTriggered=false;
-function categoryCard(c,isSystem,countLabel){
-  const card=$('button',{class:'category-card',type:'button','data-category-name':c.name,'aria-label':c.name+'. Arrastra para ordenar; mantén pulsada para editar.'},
-    $('span',{class:'cat-drag-handle','aria-label':'Arrastrar para ordenar',title:'Arrastrar para ordenar'},'⠿'),
+function categoryCard(c,isSystem){
+  const card=$('button',{class:'category-card',type:'button','data-name':c.name,'aria-label':c.name+'. Mantén pulsado para editar.'},
+    $('span',{class:'drag-h','aria-label':'Arrastrar para ordenar '+c.name,title:'Arrastrar para ordenar'},'⠿'),
     $('span',{class:'cat-ico','aria-hidden':'true'},c.icon||categoryIcon(c.name)),
-    $('strong',{},c.name),$('small',{},countLabel|| (isSystem?'Categoría integrada':'Categoría personalizada')));
+    $('strong',{},c.name));
   const start=()=>{categoryLongPressTriggered=false;clearTimeout(categoryPressTimer);categoryPressTimer=setTimeout(()=>{categoryLongPressTriggered=true;editCategory(c,isSystem)},550)};
   const stop=()=>clearTimeout(categoryPressTimer);
-  card.addEventListener('pointerdown',e=>{if(e.target.closest('.cat-drag-handle'))return;start()});
-  card.addEventListener('pointerup',stop);card.addEventListener('pointerleave',stop);card.addEventListener('pointercancel',stop);
+  card.addEventListener('pointerdown',start);card.addEventListener('pointerup',stop);card.addEventListener('pointerleave',stop);card.addEventListener('pointercancel',stop);
   card.addEventListener('contextmenu',e=>{e.preventDefault();categoryLongPressTriggered=true;editCategory(c,isSystem)});
   card.addEventListener('click',()=>{if(categoryLongPressTriggered){categoryLongPressTriggered=false;return}});
-  const handle=card.querySelector('.cat-drag-handle');
-  let dragging=false;
-  handle.addEventListener('pointerdown',e=>{
-    e.preventDefault();e.stopPropagation();stop();dragging=true;handle.setPointerCapture(e.pointerId);card.classList.add('dragging');
-  });
-  handle.addEventListener('pointermove',e=>{
-    if(!dragging)return;
-    const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.category-card');
-    if(!target||target===card||target.parentElement!==card.parentElement)return;
-    const r=target.getBoundingClientRect();
-    const sameRow=Math.abs(e.clientY-(r.top+r.height/2))<r.height*.42;
-    const before=e.clientY<r.top+r.height/2 || (sameRow&&e.clientX<r.left+r.width/2);
-    card.parentElement.insertBefore(card,before?target:target.nextSibling);
-  });
-  const finish=()=>{
-    if(!dragging)return;dragging=false;card.classList.remove('dragging');
-    const grid=card.parentElement;
-    categoryOrder=[...grid.querySelectorAll('.category-card')].map(el=>el.dataset.categoryName);
-    ccol().doc('_order').set({order:categoryOrder,ts:Date.now()},{merge:true});
-  };
-  handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
   return card;
 }
+// Arrastrar tarjetas por el asa ⠿ para cambiar el orden de las categorías.
+function enableCategoryDrag(grid){
+  grid.querySelectorAll('.drag-h').forEach(h=>{
+    h.addEventListener('contextmenu',e=>e.preventDefault());
+    h.addEventListener('pointerdown',e=>{
+      if(e.button>0||dragging)return;
+      e.preventDefault();e.stopPropagation();
+      clearTimeout(categoryPressTimer);
+      const card=h.closest('.category-card');
+      const r0=card.getBoundingClientRect();
+      const gx=e.clientX-r0.left,gy=e.clientY-r0.top;
+      let px=e.clientX,py=e.clientY,raf=0;
+      dragging=true;
+      try{h.setPointerCapture(e.pointerId)}catch(x){}
+      card.classList.add('dragging');
+      const place=()=>{
+        card.style.transform='none';
+        const n=card.getBoundingClientRect();
+        card.style.transform='translate('+(px-gx-n.left)+'px,'+(py-gy-n.top)+'px) scale(1.06)';
+      };
+      const reorder=()=>{
+        const kids=[...grid.children];
+        for(const t of kids){
+          if(t===card)continue;
+          const r=t.getBoundingClientRect();
+          if(px>r.left&&px<r.right&&py>r.top&&py<r.bottom){
+            if(kids.indexOf(card)<kids.indexOf(t))t.after(card);else t.before(card);
+            break;
+          }
+        }
+      };
+      const tick=()=>{
+        const top=(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--headh'))||84)+50;
+        const dy=py<top?-14:(py>innerHeight-120?14:0);
+        if(dy){scrollBy(0,dy);reorder();place()}
+        raf=requestAnimationFrame(tick);
+      };
+      const move=ev=>{px=ev.clientX;py=ev.clientY;reorder();place()};
+      const end=ev=>{
+        cancelAnimationFrame(raf);
+        h.removeEventListener('pointermove',move);h.removeEventListener('pointerup',end);h.removeEventListener('pointercancel',end);
+        try{h.releasePointerCapture(e.pointerId)}catch(x){}
+        card.classList.remove('dragging');card.style.transform='';
+        dragging=false;
+        const names=[...grid.children].map(c=>c.dataset.name);
+        if(names.join('|')!==cats().join('|'))saveOrder(names);
+        render();
+      };
+      h.addEventListener('pointermove',move);h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
+      place();raf=requestAnimationFrame(tick);
+    });
+  });
+}
+const catIco=name=>{const c=custom.find(x=>x.name===name);return (c&&c.icon)||categoryIcon(name)};
 function renderCategoriesPage(){
   const inp=$('input',{id:'cin',placeholder:'Nombre de la nueva categoría','aria-label':'Nueva categoría'});
   const addC=()=>{
@@ -839,16 +877,18 @@ function renderCategoriesPage(){
     ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),icon:'🏷️',ts:Date.now()});inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
-  const allCats=cats().map(name=>{
-    const customCat=custom.find(c=>c.name===name);
-    return customCat?{...customCat,icon:customCat.icon||'🏷️'}:{name,icon:categoryIcon(name)};
+  const all=cats().map(name=>{
+    const cu=custom.find(x=>x.name===name);
+    return cu?{...cu,icon:cu.icon||'🏷️',_sys:false}:{name,icon:categoryIcon(name),_sys:true};
   });
+  const grid=$('div',{class:'category-grid'},all.map(c=>categoryCard(c,c._sys)));
+  enableCategoryDrag(grid);
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Categorías'),
-    $('p',{class:'page-sub'},'Arrastra el símbolo ⠿ para ordenar todas las categorías. Mantén pulsada una tarjeta para editar su nombre o icono.'),
+    $('p',{class:'page-sub'},'Arrastra el icono ⠿ de una tarjeta para ordenarlas. Mantén pulsada una tarjeta para editar su nombre o icono. Este orden se usa en Productos y en las listas.'),
     $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addC},'Crear')),
-    $('div',{class:'section-kicker'},'Todas las categorías'),
-    $('div',{class:'category-grid'},allCats.map(c=>categoryCard(c,!!Object.prototype.hasOwnProperty.call(CATS,c.name)))),
+    $('div',{class:'section-kicker'},'Tus categorías ('+all.length+')'),
+    grid,
     categoryEditor()),bottomNav());
 }
 
@@ -885,34 +925,39 @@ function addProductFromCatalog(name,qty,cat,target){
     showMsg('Añadido a «'+t.name+'»');
   }).catch(e=>alert('No se pudo añadir el producto: '+e.message));
 }
+function groupedProducts(rows){
+  const order=cats();
+  const out=[];
+  order.forEach(c=>{
+    const g=rows.filter(p=>(order.includes(p.cat)?p.cat:'Otros')===c);
+    if(!g.length)return;
+    out.push($('div',{class:'prod-group'},$('span',{'aria-hidden':'true'},catIco(c)),c),
+      $('div',{class:'manage-card'},g.map(p=>$('div',{class:'manage-row'},
+        $('span',{class:'ico2'},'🛍️'),
+        $('div',{class:'grow'},$('strong',{},p.name),p.qty?$('small',{},p.qty):''),
+        $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir')))));
+  });
+  return $('div',{},out);
+}
 function renderProductsPage(){
   const inp=$('input',{id:'pin',placeholder:'Añadir producto (ej. 2 leche)','aria-label':'Nombre del producto'});
   const addP=()=>{
     const raw=inp.value.trim();if(!raw)return;
-    let qty='',name=raw;const m=raw.match(/^(\\d+(?:[.,]\\d+)?\\s?(?:kg|g|l|ud|uds)?)\\s+(.+)$/i);
+    let qty='',name=raw;const m=raw.match(/^(\d+(?:[.,]\d+)?\s?(?:kg|g|l|ud|uds)?)\s+(.+)$/i);
     if(m){qty=m[1];name=m[2]}
     addProductFromCatalog(name,qty,undefined,prodTargetId());inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addP()});
   const productRows=hist.filter(x=>x.name).slice(0,40);
-  const grouped=[];
-  for(const cat of cats()){
-    const group=productRows.filter(p=>(cats().includes(p.cat)?p.cat:'Otros')===cat);
-    if(group.length)grouped.push($('div',{class:'catalog-category'},
-      $('div',{class:'section-kicker'},cat),
-      $('div',{class:'manage-card'},group.map(p=>$('div',{class:'manage-row'},
-        $('span',{class:'ico2'},'🛍️'),
-        $('div',{class:'grow'},$('strong',{},p.name),$('small',{},p.cat||'Otros')),
-        $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir'))))));
-  }
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Productos'),
-    $('p',{class:'page-sub'},'Los productos se agrupan por categorías siguiendo el orden que establezcas en Categorías.'),
+    $('p',{class:'page-sub'},'Añade rápidamente productos a tu lista desde tu catálogo habitual.'),
     targetRow(),$('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
-    productRows.length?grouped:$('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
+    $('div',{class:'section-kicker'},'Productos habituales'),
+    productRows.length?groupedProducts(productRows):
+      $('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
     bottomNav());
 }
-
 function renderList(){
   const l=lists.find(x=>x.id===cur)||{name:'Lista',icon:'📝'};
   const input=$('input',{id:'in',placeholder:'Añadir producto (ej. 2 leche)',enterkeyhint:'done',list:'sug',autocomplete:'off'});
@@ -938,7 +983,7 @@ function renderList(){
 // (así no se pierde lo que se está escribiendo). Al cerrar el cuadro se redibuja con los datos nuevos.
 function measureHead(){const h=document.querySelector('.top');if(h)document.documentElement.style.setProperty('--headh',h.offsetHeight+'px')}
 addEventListener('resize',measureHead);
-function softRender(){if(document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
+function softRender(){if(dragging||document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
 function render(){
   const keep=['in','cin','pin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
   if(inList)renderList();
