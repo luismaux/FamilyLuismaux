@@ -304,6 +304,19 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .target-row select{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid #c9d7e8;border-radius:12px;background:#fff;color:#17385f}
 #msg-toast{position:fixed;left:50%;width:max-content;bottom:calc(112px + env(safe-area-inset-bottom));transform:translate(-50%,10px);visibility:hidden;opacity:0;pointer-events:none;z-index:2147483646;background:#17385f;color:#fff;border-radius:999px;padding:12px 20px;font-size:15px;font-weight:700;box-shadow:0 6px 22px #10243d66;max-width:90vw;text-align:center;transition:opacity .16s,transform .16s}
 #msg-toast.show{visibility:visible;opacity:1;transform:translate(-50%,0)}
+.gear-btn{margin-left:auto;flex:none;width:46px;height:46px;border-radius:50%;border:0;background:#ffffff2e;color:#fff;display:grid;place-items:center;cursor:pointer}
+.gear-btn svg{width:27px;height:27px;fill:currentColor}
+.gear-btn[aria-expanded=true]{background:#fff;color:#0755b5}
+.settings-panel{position:absolute;right:12px;top:calc(100% + 8px);width:min(330px,calc(100vw - 24px));background:#fff;color:#17385f;border-radius:18px;padding:16px;box-shadow:0 14px 34px #0a2a5a59;border:1px solid #d6e2f2}
+.settings-panel h2{margin:0 0 4px;font-size:17px;color:#17385f}
+.set-note{font-size:13px;line-height:1.35;color:#5b7191;margin:0 0 6px}
+.set-btn{display:flex;align-items:center;gap:10px;width:100%;margin-top:8px;padding:13px 14px;border-radius:14px;border:1.5px solid #c9d7e8;background:#f3f8ff;color:#0755b5;font:inherit;font-weight:800;font-size:16px;cursor:pointer;text-align:left}
+.set-btn:disabled{opacity:.55;cursor:default}
+.set-status{font-size:13px;font-weight:700;color:#075fc2;margin-top:10px;min-height:1.2em}
+.subbar{position:sticky;top:var(--headh,84px);z-index:45;background:#fff;border-bottom:1px solid #d6e2f2;box-shadow:0 3px 10px #164b8514;padding:6px 14px}
+.subin{max-width:620px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.subbar .back{color:#0755b5;font-size:38px;padding:0 8px 4px 0}
+.subbar h1{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:21px;color:#17385f}
 </style>
 </head>
 <body>
@@ -371,7 +384,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -396,6 +409,7 @@ async function start(){
     if(!firebase.apps.length){firebase.initializeApp(firebaseConfig);db=firebase.firestore();db.enablePersistence({synchronizeTabs:true}).catch(()=>{})}
     await firebase.auth().signInAnonymously();
   }catch(e){return login('No se pudo conectar: '+e.message)}
+  started=true;
   if(unsubL)unsubL();
   unsubL=lcol().orderBy('ts').onSnapshot(s=>{
     lists=s.docs.map(d=>({id:d.id,...d.data()}));
@@ -460,7 +474,7 @@ function disarmExit(gesture){
 function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTimer=setTimeout(()=>disarmExit(false),2500)}
 // Cierra primero diálogos y paneles abiertos; devuelve true si cerró alguno.
 function closeOverlays(){
-  if(editing||categoryEditing||showIcons){editing=null;categoryEditing=null;showIcons=false;render();return true}
+  if(editing||categoryEditing||showIcons||showSettings){editing=null;categoryEditing=null;showIcons=false;showSettings=false;render();return true}
   return false;
 }
 // Flecha ‹ de la pantalla de una lista: no toca el historial.
@@ -493,8 +507,84 @@ function delList(){
 }
 const cats=()=>[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
 const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
-function topBar(){return $('div',{class:'top'},$('div',{class:'topin'},$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')))}
-function salir(){inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
+const SVGNS='http://www.w3.org/2000/svg';
+function gearIcon(){
+  const v=document.createElementNS(SVGNS,'svg');v.setAttribute('viewBox','0 0 24 24');v.setAttribute('aria-hidden','true');
+  const p=document.createElementNS(SVGNS,'path');
+  p.setAttribute('d','M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z');
+  v.appendChild(p);return v;
+}
+function topBar(){
+  const kids=[$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')];
+  if(started)kids.push($('button',{class:'gear-btn','aria-label':'Ajustes y copia de seguridad','aria-expanded':showSettings?'true':'false',
+    onclick:()=>{showSettings=!showSettings;setMsg='';render()}},gearIcon()));
+  return $('div',{class:'top'},$('div',{class:'topin'},kids),started&&showSettings?settingsPanel():'');
+}
+function settingsPanel(){
+  const save=$('button',{class:'set-btn',onclick:exportBackup},'💾 Guardar copia');
+  const rest=$('button',{class:'set-btn',onclick:pickBackupFile},'📂 Restaurar copia');
+  save.disabled=rest.disabled=setBusy;
+  return $('div',{class:'settings-panel',role:'dialog','aria-label':'Copia de seguridad'},
+    $('h2',{},'Copia de seguridad'),
+    $('p',{class:'set-note'},'Guarda en tu móvil un archivo con todas las listas, productos, categorías e historial de la familia, o recupéralo desde un archivo guardado.'),
+    save,rest,$('div',{class:'set-status',role:'status'},setMsg));
+}
+// ---- Copia de seguridad ----
+function downloadText(name,text){
+  const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+async function exportBackup(){
+  if(setBusy)return;
+  setBusy=true;setMsg='Preparando la copia…';render();
+  try{
+    const grab=async q=>(await q.get({source:'server'})).docs.map(d=>({id:d.id,data:d.data()}));
+    const [listas,historial,categorias]=await Promise.all([grab(lcol()),grab(hcol()),grab(ccol())]);
+    await Promise.all(listas.map(async l=>{l.items=await grab(lcol().doc(l.id).collection('items'))}));
+    const now=new Date(),p2=n=>String(n).padStart(2,'0');
+    const stamp=now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate());
+    downloadText('FamilyLuismaux-copia-'+stamp+'.json',JSON.stringify({app:'FamilyLuismaux',formato:1,fecha:now.toISOString(),listas,historial,categorias}));
+    setMsg='Copia guardada: '+listas.length+' listas y '+listas.reduce((n,l)=>n+l.items.length,0)+' productos. La encontrarás en Descargas.';
+  }catch(e){setMsg='No se pudo guardar la copia. Hace falta conexión.'}
+  setBusy=false;render();
+}
+function pickBackupFile(){
+  if(setBusy)return;
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
+  inp.addEventListener('change',()=>{const f=inp.files&&inp.files[0];if(f)restoreBackup(f)});
+  inp.click();
+}
+const cleanData=o=>{const r={};if(o&&typeof o==='object'&&!Array.isArray(o))for(const k of Object.keys(o)){const v=o[k];if(['string','number','boolean'].includes(typeof v))r[k]=v}return r};
+const okId=id=>typeof id==='string'&&id.length>0&&id.length<200&&!id.includes('/');
+async function restoreBackup(file){
+  let d;
+  try{d=JSON.parse(await file.text())}catch(e){setMsg='El archivo no es una copia válida.';render();return}
+  if(!d||d.app!=='FamilyLuismaux'||!Array.isArray(d.listas)||!Array.isArray(d.historial)||!Array.isArray(d.categorias)){setMsg='Este archivo no es una copia de Family Luismaux.';render();return}
+  if(!navigator.onLine){setMsg='Necesitas conexión para restaurar la copia.';render();return}
+  const ops=[],add=(ref,data)=>ops.push([ref,cleanData(data)]);
+  d.listas.forEach(l=>{
+    if(!l||!okId(l.id))return;
+    add(lcol().doc(l.id),l.data);
+    (Array.isArray(l.items)?l.items:[]).forEach(i=>{if(i&&okId(i.id))add(lcol().doc(l.id).collection('items').doc(i.id),i.data)});
+  });
+  d.historial.forEach(h=>{if(h&&okId(h.id))add(hcol().doc(h.id),h.data)});
+  d.categorias.forEach(c=>{if(c&&okId(c.id))add(ccol().doc(c.id),c.data)});
+  const nProd=d.listas.reduce((n,l)=>n+(l&&Array.isArray(l.items)?l.items.length:0),0);
+  const fecha=d.fecha&&!isNaN(new Date(d.fecha))?new Date(d.fecha).toLocaleDateString('es-ES'):'fecha desconocida';
+  if(!confirm('Copia del '+fecha+':\n'+d.listas.length+' listas, '+nProd+' productos y '+d.categorias.length+' categorías.\n\nSe volverá a crear lo que falte y lo que coincida se sobrescribirá con lo de la copia. No se borra nada de lo actual.\n\n¿Restaurar?'))return;
+  setBusy=true;setMsg='Restaurando…';render();
+  try{
+    for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(([r,x])=>b.set(r,x));await b.commit()}
+    setMsg='Copia restaurada ('+ops.length+' elementos).';
+  }catch(e){setMsg='No se pudo restaurar. Inténtalo de nuevo con conexión.'}
+  setBusy=false;render();
+}
+// Un toque fuera del panel de ajustes lo cierra
+document.addEventListener('pointerdown',e=>{
+  if(showSettings&&!(e.target.closest&&e.target.closest('.settings-panel,.gear-btn'))){showSettings=false;render()}
+},true);
+function salir(){started=false;showSettings=false;inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
 function catsPanel(){
   if(!showCats)return '';
   const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
@@ -583,7 +673,7 @@ function row(i){
   return card;
 }
 
-function listBar(l){return $('div',{class:'top'},$('div',{class:'topin'},
+function listBar(l){return $('div',{class:'subbar'},$('div',{class:'subin'},
   $('button',{class:'back','aria-label':'Volver a las listas',onclick:back},'‹'),
   $('span',{class:'ico2'},l.icon||'📝'),$('h1',{},l.name)))}
 function iconsPanel(){
@@ -619,7 +709,7 @@ function renderHome(){
     $('div',{class:'manage-card'},$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
       $('button',{class:'pill-action',onclick:newList},'Nueva +'))),
-    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 13')),
+    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 14')),
     bottomNav());
 }
 const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
@@ -772,7 +862,7 @@ function renderList(){
     if(g.length)body.push($('h2',{},c),$('div',{class:'products-grid'},g.map(row)));
   }
   if(done.length)body.push($('div',{class:'head'},$('h2',{},'Comprados ('+done.length+')'),$('button',{class:'clr',onclick:clearDone},'Quitar comprados')),$('div',{class:'products-grid'},done.map(row)));
-  app.replaceChildren(listBar(l),$('div',{class:'wrap'},
+  app.replaceChildren(topBar(),listBar(l),$('div',{class:'wrap'},
     $('div',{class:'acts'},$('button',{onclick:renameList},'Renombrar'),$('button',{onclick:()=>{showIcons=!showIcons;render()}},'Icono'),$('button',{onclick:delList},'Borrar lista')),
     iconsPanel(),
     $('div',{class:'bar'},input,dl,$('button',{class:'add',onclick:go},'Añadir')),
@@ -780,6 +870,8 @@ function renderList(){
 }
 // Los cambios que llegan de otros móviles no redibujan la pantalla si hay un cuadro de edición abierto
 // (así no se pierde lo que se está escribiendo). Al cerrar el cuadro se redibuja con los datos nuevos.
+function measureHead(){const h=document.querySelector('.top');if(h)document.documentElement.style.setProperty('--headh',h.offsetHeight+'px')}
+addEventListener('resize',measureHead);
 function softRender(){if(document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
 function render(){
   const keep=['in','cin','pin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
@@ -788,6 +880,7 @@ function render(){
   else if(navView==='products')renderProductsPage();
   else renderHome();
   keep.forEach(k=>{if(!k)return;const e=document.getElementById(k[0]);if(e){e.value=k[1];if(k[2])e.focus()}});
+  measureHead();
 }
 
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
