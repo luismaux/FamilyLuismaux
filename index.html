@@ -137,8 +137,8 @@ li{padding:13px 14px;border-color:#e1e8f1;min-height:60px}
 .code{color:#075fc2}
 .ig .ib{background:#f4f8fd;border-color:#d7e0ec}
 #st{bottom:calc(96px + env(safe-area-inset-bottom));background:#0755b5;color:#fff}
-#exit-toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translate(-50%,14px);opacity:0;pointer-events:none;z-index:3000;background:#17385f;color:#fff;border-radius:999px;padding:12px 20px;font-size:14px;font-weight:700;box-shadow:0 5px 18px #10243d44;white-space:nowrap;transition:opacity .18s,transform .18s}
-#exit-toast.show{opacity:1;transform:translate(-50%,0)}
+#exit-toast{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translate(-50%,10px);display:block;visibility:hidden;opacity:0;pointer-events:none;z-index:2147483647;background:#17385f;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:14px 22px;font-size:15px;font-weight:800;line-height:1.25;box-shadow:0 6px 22px #10243d66;white-space:nowrap;text-align:center;transition:opacity .16s,transform .16s}
+#exit-toast.show{visibility:visible;opacity:1;transform:translate(-50%,0)}
 .bottom-nav{position:fixed;z-index:20;left:0;right:0;bottom:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#0878e8,#06469c);border-top:1px solid #5aaaff;box-shadow:0 -5px 20px #173b641f;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .nav-btn{border:0;background:transparent;color:#e5f2ff;border-radius:15px;min-height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .nav-btn .nav-ico{font-size:24px;line-height:1.1}
@@ -424,17 +424,35 @@ const KW=[['🛒',['compra','super','mercado']],['💊',['farmacia','medic']],['
 function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.includes(k)))return e;return '📝'}
 function pick(id){navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
 function goHome(){inList=false;navView='home';showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
-let exitArmed=false,allowBrowserBack=false,exitTimer=null;
+let exitArmed=false,exitTimer=null;
 function isMainScreen(){return !inList&&navView==='home'&&!editing&&!categoryEditing}
 function showExitToast(){
   let toast=document.getElementById('exit-toast');
-  if(!toast){toast=document.createElement('div');toast.id='exit-toast';toast.textContent='Pulsa nuevamente para salir';document.body.appendChild(toast)}
-  toast.classList.add('show');clearTimeout(exitTimer);exitTimer=setTimeout(()=>toast.classList.remove('show'),2100);
+  if(!toast){toast=document.createElement('div');toast.id='exit-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast)}
+  toast.textContent='Pulsa nuevamente para salir';
+  toast.classList.remove('show');
+  // Forzar un nuevo ciclo de pintado para que el aviso aparezca también en Android WebView/PWA.
+  void toast.offsetWidth;
+  toast.classList.add('show');
+  clearTimeout(exitTimer);
+  exitTimer=setTimeout(()=>{toast.classList.remove('show');exitArmed=false},2500);
 }
-function ensureAppHistory(){history.pushState({familyLuismaux:true},'',location.pathname+location.search+'#app')}
-function back(){history.back()}
+function ensureAppHistory(){
+  try{history.pushState({familyLuismaux:true,guard:Date.now()},'',location.href)}catch(e){}
+}
+function back(){
+  if(!isMainScreen()){goHome();exitArmed=false;ensureAppHistory();return}
+  if(exitArmed){
+    clearTimeout(exitTimer);
+    const toast=document.getElementById('exit-toast');if(toast)toast.classList.remove('show');
+    // Deja que el siguiente Atrás del sistema cierre la PWA.
+    history.back();
+    return;
+  }
+  exitArmed=true;
+  showExitToast();
+}
 window.addEventListener('popstate',()=>{
-  if(allowBrowserBack)return;
   if(!isMainScreen()){
     goHome();
     exitArmed=false;
@@ -442,15 +460,16 @@ window.addEventListener('popstate',()=>{
     return;
   }
   if(exitArmed){
-    allowBrowserBack=true;
-    return; // permite que Android cierre la PWA / vuelva al lanzador
+    clearTimeout(exitTimer);
+    const toast=document.getElementById('exit-toast');if(toast)toast.classList.remove('show');
+    // No se vuelve a insertar una entrada: permite al sistema cerrar la aplicación.
+    return;
   }
   exitArmed=true;
   showExitToast();
   ensureAppHistory();
-  setTimeout(()=>{exitArmed=false},2200);
 });
-// Mantiene una entrada propia para recibir el botón físico/gesto Atrás de Android.
+// Entrada de protección inicial para capturar el primer Atrás en la PWA instalada.
 if(!history.state||!history.state.familyLuismaux)ensureAppHistory();
 function newList(){
   const n=(prompt('Nombre de la lista (ej. Farmacia)')||'').trim();if(!n)return;
