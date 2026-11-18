@@ -224,6 +224,22 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .category-card small{font-size:10px;line-height:1.15;color:#718096;overflow-wrap:anywhere}
 .category-card:focus-visible{outline:3px solid #8fc5ff;outline-offset:2px}
 .category-card{position:relative}
+.ui-overlay{position:fixed;top:var(--vvtop,0px);left:0;right:0;height:var(--vvh,100dvh);z-index:3000;display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));background:rgba(12,32,58,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:uiFade .14s ease-out}
+.ui-dialog{width:min(100%,360px);max-height:100%;overflow-y:auto;background:#fff;color:#172b49;border:1px solid #d7e2f0;border-radius:24px;box-shadow:0 18px 60px #001b3b66;padding:0 20px 20px;text-align:center;animation:uiPop .16s ease-out}
+.ui-head{margin:0 -20px 16px;padding:18px 20px 14px;border-radius:23px 23px 0 0;background:linear-gradient(120deg,#0755b5,#087cf0);color:#fff;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ui-head img{width:58px;height:58px;object-fit:cover;border:2px solid #fff;border-radius:15px;box-shadow:0 3px 12px #002b6680;display:block}
+.ui-head strong{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.ui-msg{margin:0;font-size:16px;line-height:1.4;font-weight:600;color:#17385f;white-space:pre-line;overflow-wrap:anywhere}
+.ui-input{width:100%;min-height:48px;margin-top:14px;padding:11px 13px;border:1.5px solid #cbd8e8;border-radius:13px;background:#f8fbff;color:#172b49;font:inherit;font-size:16px;text-align:left}
+.ui-input:focus{outline:3px solid #8fc5ff;outline-offset:1px;border-color:#0875e8}
+.ui-btns{display:flex;gap:10px;margin-top:20px}
+.ui-btns button{flex:1;min-height:48px;padding:10px 12px;border-radius:14px;font:inherit;font-weight:800;font-size:16px;cursor:pointer}
+.ui-cancel{border:1.5px solid #c9d7e8;background:#f3f8ff;color:#0755b5}
+.ui-ok{border:0;color:#fff;background:linear-gradient(120deg,#0755b5,#087cf0);box-shadow:0 3px 0 #06418e}
+.ui-ok.danger{background:linear-gradient(120deg,#c62828,#e5322d);box-shadow:0 3px 0 #8f1d1d}
+@keyframes uiFade{from{opacity:0}to{opacity:1}}
+@keyframes uiPop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.ui-overlay,.ui-dialog{animation:none}}
 .prod-photo{width:46px;height:46px;border-radius:12px;object-fit:cover;display:block;border:1px solid #d5dfeb;background:#f4f8fd}
 .product-card .prod-photo{width:46px;height:46px}
 .manage-row .prod-photo{width:42px;height:42px;flex:none}
@@ -408,7 +424,38 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='16';
+const APP_VERSION='17';
+// ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
+let uiDlg=null;
+function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
+  return new Promise(resolve=>{
+    if(uiDlg)uiDlg.cancel();
+    const field=input?$('input',{class:'ui-input',value:input.value||'',placeholder:input.placeholder||'',autocomplete:'off','aria-label':message}):null;
+    const cancelVal=field?null:false;
+    let done=false;
+    const finish=v=>{if(done)return;done=true;document.removeEventListener('keydown',onKey,true);overlay.remove();uiDlg=null;resolve(v)};
+    const onKey=e=>{
+      if(e.key==='Escape'){e.preventDefault();e.stopPropagation();finish(cancelVal)}
+      else if(e.key==='Enter'&&e.target===field){e.preventDefault();finish(field.value)}
+    };
+    const ok=$('button',{type:'button',class:'ui-ok'+(danger?' danger':''),onclick:()=>finish(field?field.value:true)},okText);
+    const btns=[ok];
+    if(showCancel)btns.unshift($('button',{type:'button',class:'ui-cancel',onclick:()=>finish(cancelVal)},cancelText));
+    const overlay=$('div',{class:'ui-overlay',onclick:e=>{if(e.target===overlay)finish(cancelVal)}});
+    overlay.append($('div',{class:'ui-dialog',role:'alertdialog','aria-modal':'true','aria-label':message,onclick:e=>e.stopPropagation()},
+      $('div',{class:'ui-head'},$('img',{src:'icon-192.png',alt:''}),$('strong',{},'Family Luismaux')),
+      $('p',{class:'ui-msg'},message),
+      field||'',
+      $('div',{class:'ui-btns'},btns)));
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown',onKey,true);
+    uiDlg={cancel:()=>finish(cancelVal)};
+    setTimeout(()=>{if(field){field.focus();field.select()}else (danger&&showCancel?btns[0]:ok).focus()},30);
+  });
+}
+const uiAlert=message=>uiDialog({message,showCancel:false});
+const uiConfirm=(message,o={})=>uiDialog({message,okText:o.okText||'Aceptar',danger:!!o.danger});
+const uiPrompt=(message,value='',o={})=>uiDialog({message,input:{value,placeholder:o.placeholder||''},okText:o.okText||'Aceptar'});
 let catOrder=[];
 let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
@@ -513,6 +560,7 @@ function disarmExit(gesture){
 function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTimer=setTimeout(()=>disarmExit(false),2500)}
 // Cierra primero diálogos y paneles abiertos; devuelve true si cerró alguno.
 function closeOverlays(){
+  if(uiDlg){uiDlg.cancel();return true}
   if(editing||categoryEditing||showIcons||showSettings){editing=null;categoryEditing=null;showIcons=false;showSettings=false;render();return true}
   return false;
 }
@@ -530,18 +578,18 @@ window.addEventListener('popstate',()=>{
   if(exitArmed)disarmExit(true);else toGuard(true);
 },true));
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&exitArmed)disarmExit(false)});
-function newList(){
-  const n=(prompt('Nombre de la lista (ej. Farmacia)')||'').trim();if(!n)return;
+async function newList(){
+  const n=((await uiPrompt('Nombre de la nueva lista',''))||'').trim();if(!n)return;
   const r=lcol().doc();r.set({name:n,icon:autoIcon(n),ts:Date.now()});pick(r.id);
 }
-function renameList(){
+async function renameList(){
   const l=lists.find(x=>x.id===cur);
-  const n=(prompt('Nuevo nombre',l.name)||'').trim();if(n)lcol().doc(cur).update({name:n});
+  const n=((await uiPrompt('Nuevo nombre de la lista',l.name))||'').trim();if(n)lcol().doc(cur).update({name:n});
 }
-function delList(){
-  if(lists.length<2)return alert('Tiene que quedar al menos una lista.');
+async function delList(){
+  if(lists.length<2)return uiAlert('Tiene que quedar al menos una lista.');
   const l=lists.find(x=>x.id===cur);
-  if(!confirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?'))return;
+  if(!(await uiConfirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?',{okText:'Borrar',danger:true})))return;
   const b=db.batch();items.forEach(i=>b.delete(col().doc(i.id)));b.delete(lcol().doc(cur));b.commit();
 }
 // Orden de categorías elegido por el usuario (se guarda como texto JSON en un documento 'orden').
@@ -620,7 +668,7 @@ async function restoreBackup(file){
   d.categorias.forEach(c=>{if(c&&okId(c.id))add(ccol().doc(c.id),c.data)});
   const nProd=d.listas.reduce((n,l)=>n+(l&&Array.isArray(l.items)?l.items.length:0),0);
   const fecha=d.fecha&&!isNaN(new Date(d.fecha))?new Date(d.fecha).toLocaleDateString('es-ES'):'fecha desconocida';
-  if(!confirm('Copia del '+fecha+':\n'+d.listas.length+' listas, '+nProd+' productos y '+d.categorias.length+' categorías.\n\nSe volverá a crear lo que falte y lo que coincida se sobrescribirá con lo de la copia. No se borra nada de lo actual.\n\n¿Restaurar?'))return;
+  if(!(await uiConfirm('Copia del '+fecha+':\n'+d.listas.length+' listas, '+nProd+' productos y '+d.categorias.length+' categorías.\n\nSe volverá a crear lo que falte y lo que coincida se sobrescribirá con lo de la copia. No se borra nada de lo actual.\n\n¿Restaurar?',{okText:'Restaurar'})))return;
   setBusy=true;setMsg='Restaurando…';render();
   try{
     for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(([r,x])=>b.set(r,x));await b.commit()}
@@ -638,14 +686,14 @@ function catsPanel(){
   const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
   const addC=()=>{
     const n=inp.value.trim();if(!n)return;
-    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return alert('Esa categoría ya existe.');
+    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return uiAlert('Esa categoría ya existe.');
     ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),ts:Date.now()});inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
   return $('div',{class:'cp'},
     $('span',{class:'t'},custom.length?'Tus categorías':'Aún no has creado ninguna. Luego asígnalas a un producto con el lápiz ✎.'),
     custom.length?$('div',{class:'hab'},custom.map(c=>$('span',{class:'chip'},$('span',{class:'cn'},c.name),
-      $('button',{class:'cx','aria-label':'Borrar categoría '+c.name,onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.'))ccol().doc(c.id).delete()}},'×')))):'',
+      $('button',{class:'cx','aria-label':'Borrar categoría '+c.name,onclick:async()=>{if(await uiConfirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.',{okText:'Borrar',danger:true}))ccol().doc(c.id).delete()}},'×')))):'',
     $('div',{class:'bar',style:'position:static;padding:4px 0 0'},inp,$('button',{class:'add',onclick:addC},'Crear')));
 }
 function add(raw){
@@ -722,7 +770,7 @@ function editRow(i){
   };
   fi.addEventListener('change',async()=>{
     const f=fi.files&&fi.files[0];fi.value='';if(!f)return;
-    try{const v=await resizePhoto(f);if(editPhoto&&editPhoto.id===i.id)editPhoto.val=v;drawPhoto()}catch(e){alert('No se pudo leer la foto. Prueba con otra.')}
+    try{const v=await resizePhoto(f);if(editPhoto&&editPhoto.id===i.id)editPhoto.val=v;drawPhoto()}catch(e){uiAlert('No se pudo leer la foto. Prueba con otra.')}
   });
   drawPhoto();
   const save=()=>{
@@ -836,16 +884,16 @@ function categoryEditor(){
     const newName=(name.value||'').trim();if(!newName)return name.focus();
     const nm=newName.charAt(0).toUpperCase()+newName.slice(1);
     if(c.isSystem){ccol().doc('sys-'+key(c.name)).set({system:true,name:c.name,icon:selected,ts:Date.now()},{merge:true});close();return}
-    if(cats().some(x=>x!==c.name&&x.toLowerCase()===nm.toLowerCase()))return alert('Ya existe una categoría con ese nombre.');
+    if(cats().some(x=>x!==c.name&&x.toLowerCase()===nm.toLowerCase()))return uiAlert('Ya existe una categoría con ese nombre.');
     if(nm===c.name){ccol().doc(c.id).update({icon:selected});close();return}
     saving=true;
     try{await renameCategoryEverywhere(c,nm,selected)}
-    catch(e){saving=false;return alert('No se pudo renombrar la categoría. Hace falta conexión para actualizar también sus productos. Inténtalo de nuevo.')}
+    catch(e){saving=false;return uiAlert('No se pudo renombrar la categoría. Hace falta conexión para actualizar también sus productos. Inténtalo de nuevo.')}
     close();
   };
   const overlay=$('div',{class:'cat-edit-overlay',onclick:e=>{if(e.target===overlay)close()}});
   const actions=[$('button',{class:'btn1',onclick:save},'Guardar'),$('button',{class:'btn2',onclick:close},'Cancelar')];
-  if(!c.isSystem)actions.unshift($('button',{class:'btn2',onclick:()=>{if(confirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.')){ccol().doc(c.id).delete();close()}}},'Borrar'));
+  if(!c.isSystem)actions.unshift($('button',{class:'btn2',onclick:async()=>{if(await uiConfirm('¿Borrar la categoría "'+c.name+'"? Sus productos pasarán a Otros.',{okText:'Borrar',danger:true})){ccol().doc(c.id).delete();close()}}},'Borrar'));
   const dialog=$('div',{class:'cat-edit-dialog',onclick:e=>e.stopPropagation()},
     $('div',{class:'cat-edit-title'},'✎  Editar categoría'),
     $('label',{},'Nombre de la categoría'),name,
@@ -943,7 +991,7 @@ function renderCategoriesPage(){
   const inp=$('input',{id:'cin',placeholder:'Nombre de la nueva categoría','aria-label':'Nueva categoría'});
   const addC=()=>{
     const n=inp.value.trim();if(!n)return;
-    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return alert('Esa categoría ya existe.');
+    if(cats().some(c=>c.toLowerCase()===n.toLowerCase()))return uiAlert('Esa categoría ya existe.');
     ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),icon:'🏷️',ts:Date.now()});inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
@@ -978,7 +1026,7 @@ function targetRow(){
 }
 function addProductFromCatalog(name,qty,cat,target){
   const t=lists.find(l=>l.id===target)||lists.find(l=>l.id===cur)||lists[0];
-  if(!t)return alert('Crea primero una lista de compra.');
+  if(!t)return uiAlert('Crea primero una lista de compra.');
   const normalized=name.charAt(0).toUpperCase()+name.slice(1);
   const productKey=key(normalized);
   const ref=lcol().doc(t.id).collection('items');
@@ -993,7 +1041,7 @@ function addProductFromCatalog(name,qty,cat,target){
     hcol().doc(productKey).set({name:normalized,qty:qty||'',cat:c,count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
     touchList(t.id);
     showMsg('Añadido a «'+t.name+'»');
-  }).catch(e=>alert('No se pudo añadir el producto: '+e.message));
+  }).catch(e=>uiAlert('No se pudo añadir el producto: '+e.message));
 }
 function groupedProducts(rows){
   const order=cats();
