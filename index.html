@@ -322,6 +322,17 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .new-by{font-size:12px;font-weight:700;background:#ffffff2e;border-radius:999px;padding:3px 10px}
 .nav-btn{position:relative}
 .nav-dot{position:absolute;top:6px;right:calc(50% - 24px);width:13px;height:13px;border-radius:50%;background:#e5322d;border:2px solid #0a63c9}
+
+/* Versión 16: marca y orden unificado de categorías */
+.brand-title{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;min-width:0;flex:1;gap:1px}
+.brand-title h1{align-self:flex-start}
+.app-version{align-self:flex-end;color:#dcecff;font-size:11px;font-weight:700;letter-spacing:.04em;line-height:1}
+.category-card{position:relative}
+.category-card .cat-drag-handle{position:absolute;top:5px;right:8px;z-index:2;color:#6d87a5;font-size:23px;line-height:1;cursor:grab;touch-action:none;padding:2px 5px;border-radius:7px;background:#edf5ff}
+.category-card.dragging{opacity:.62;transform:scale(.97);border:2px dashed #0875e8}
+.catalog-category{margin:12px 0 16px}
+.catalog-category .section-kicker{margin:8px 2px}
+@media(max-width:380px){.brand-title h1{font-size:22px}}
 </style>
 </head>
 <body>
@@ -389,7 +400,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
+let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},categoryOrder=[],unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
 function login(msg){
   const nm=$('input',{placeholder:'Tu nombre (ej. Marta)',value:me||'',autocomplete:'given-name'});
@@ -426,7 +437,7 @@ async function start(){
   if(unsubH)unsubH();
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());softRender()},()=>{});
   if(unsubC)unsubC();
-  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
+  unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));const orderDoc=docs.find(x=>x.id==='_order');categoryOrder=Array.isArray(orderDoc?.order)?orderDoc.order:[];custom=docs.filter(x=>!x.system&&x.id!=='_order');catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
   render();
 }
 function subItems(){
@@ -523,7 +534,11 @@ function delList(){
   if(!confirm('¿Borrar la lista "'+l.name+'" y sus productos para todos?'))return;
   const b=db.batch();items.forEach(i=>b.delete(col().doc(i.id)));b.delete(lcol().doc(cur));b.commit();
 }
-const cats=()=>[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
+const cats=()=>{
+  const all=[...new Set([...Object.keys(CATS),...custom.map(c=>c.name),'Otros'])];
+  const rank=new Map(categoryOrder.map((name,i)=>[name,i]));
+  return all.sort((a,b)=>(rank.has(a)?rank.get(a):9999)-(rank.has(b)?rank.get(b):9999));
+};
 const catKey=i=>cats().includes(i.cat)?i.cat:'Otros';
 const SVGNS='http://www.w3.org/2000/svg';
 function gearIcon(){
@@ -533,7 +548,8 @@ function gearIcon(){
   v.appendChild(p);return v;
 }
 function topBar(){
-  const kids=[$('img',{src:'icon-192.png',alt:'',width:40,height:40}),$('h1',{},'Family Luismaux')];
+  const brand=$('div',{class:'brand-title'},$('h1',{},'Family Luismaux'),started?$('small',{class:'app-version'},'v.16'):'');
+  const kids=[$('img',{src:'icon-192.png',alt:'',width:40,height:40}),brand];
   if(started)kids.push($('button',{class:'gear-btn','aria-label':'Ajustes y copia de seguridad','aria-expanded':showSettings?'true':'false',
     onclick:()=>{showSettings=!showSettings;setMsg='';render()}},gearIcon()));
   return $('div',{class:'top'},$('div',{class:'topin'},kids),started&&showSettings?settingsPanel():'');
@@ -729,7 +745,7 @@ function renderHome(){
     $('div',{class:'manage-card'},$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
       $('button',{class:'pill-action',onclick:newList},'Nueva +'))),
-    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 15')),
+    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · v.16')),
     bottomNav());
 }
 const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
@@ -782,14 +798,37 @@ function categoryEditor(){
 }
 let categoryPressTimer=null,categoryLongPressTriggered=false;
 function categoryCard(c,isSystem,countLabel){
-  const card=$('button',{class:'category-card',type:'button','aria-label':c.name+'. Mantén pulsado para editar.'},
+  const card=$('button',{class:'category-card',type:'button','data-category-name':c.name,'aria-label':c.name+'. Arrastra para ordenar; mantén pulsada para editar.'},
+    $('span',{class:'cat-drag-handle','aria-label':'Arrastrar para ordenar',title:'Arrastrar para ordenar'},'⠿'),
     $('span',{class:'cat-ico','aria-hidden':'true'},c.icon||categoryIcon(c.name)),
     $('strong',{},c.name),$('small',{},countLabel|| (isSystem?'Categoría integrada':'Categoría personalizada')));
   const start=()=>{categoryLongPressTriggered=false;clearTimeout(categoryPressTimer);categoryPressTimer=setTimeout(()=>{categoryLongPressTriggered=true;editCategory(c,isSystem)},550)};
   const stop=()=>clearTimeout(categoryPressTimer);
-  card.addEventListener('pointerdown',start);card.addEventListener('pointerup',stop);card.addEventListener('pointerleave',stop);card.addEventListener('pointercancel',stop);
+  card.addEventListener('pointerdown',e=>{if(e.target.closest('.cat-drag-handle'))return;start()});
+  card.addEventListener('pointerup',stop);card.addEventListener('pointerleave',stop);card.addEventListener('pointercancel',stop);
   card.addEventListener('contextmenu',e=>{e.preventDefault();categoryLongPressTriggered=true;editCategory(c,isSystem)});
   card.addEventListener('click',()=>{if(categoryLongPressTriggered){categoryLongPressTriggered=false;return}});
+  const handle=card.querySelector('.cat-drag-handle');
+  let dragging=false;
+  handle.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();stop();dragging=true;handle.setPointerCapture(e.pointerId);card.classList.add('dragging');
+  });
+  handle.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.category-card');
+    if(!target||target===card||target.parentElement!==card.parentElement)return;
+    const r=target.getBoundingClientRect();
+    const sameRow=Math.abs(e.clientY-(r.top+r.height/2))<r.height*.42;
+    const before=e.clientY<r.top+r.height/2 || (sameRow&&e.clientX<r.left+r.width/2);
+    card.parentElement.insertBefore(card,before?target:target.nextSibling);
+  });
+  const finish=()=>{
+    if(!dragging)return;dragging=false;card.classList.remove('dragging');
+    const grid=card.parentElement;
+    categoryOrder=[...grid.querySelectorAll('.category-card')].map(el=>el.dataset.categoryName);
+    ccol().doc('_order').set({order:categoryOrder,ts:Date.now()},{merge:true});
+  };
+  handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);
   return card;
 }
 function renderCategoriesPage(){
@@ -800,16 +839,16 @@ function renderCategoriesPage(){
     ccol().add({name:n.charAt(0).toUpperCase()+n.slice(1),icon:'🏷️',ts:Date.now()});inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addC()});
-  const systemCats=Object.keys(CATS).map(name=>({name,icon:categoryIcon(name)}));
-  const customCats=custom.map(c=>({...c,icon:c.icon||'🏷️'}));
+  const allCats=cats().map(name=>{
+    const customCat=custom.find(c=>c.name===name);
+    return customCat?{...customCat,icon:customCat.icon||'🏷️'}:{name,icon:categoryIcon(name)};
+  });
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Categorías'),
-    $('p',{class:'page-sub'},'Mantén pulsada una tarjeta para editar su nombre o cambiar su icono.'),
+    $('p',{class:'page-sub'},'Arrastra el símbolo ⠿ para ordenar todas las categorías. Mantén pulsada una tarjeta para editar su nombre o icono.'),
     $('div',{class:'bar'},inp,$('button',{class:'add',onclick:addC},'Crear')),
-    $('div',{class:'section-kicker'},'Categorías disponibles'),
-    $('div',{class:'category-grid'},systemCats.map(c=>categoryCard(c,true))),
-    $('div',{class:'section-kicker'},'Tus categorías'),
-    customCats.length?$('div',{class:'category-grid'},customCats.map(c=>categoryCard(c,false))):$('p',{class:'page-sub'},'Todavía no has creado categorías personalizadas.'),
+    $('div',{class:'section-kicker'},'Todas las categorías'),
+    $('div',{class:'category-grid'},allCats.map(c=>categoryCard(c,!!Object.prototype.hasOwnProperty.call(CATS,c.name)))),
     categoryEditor()),bottomNav());
 }
 
@@ -850,24 +889,30 @@ function renderProductsPage(){
   const inp=$('input',{id:'pin',placeholder:'Añadir producto (ej. 2 leche)','aria-label':'Nombre del producto'});
   const addP=()=>{
     const raw=inp.value.trim();if(!raw)return;
-    let qty='',name=raw;const m=raw.match(/^(\d+(?:[.,]\d+)?\s?(?:kg|g|l|ud|uds)?)\s+(.+)$/i);
+    let qty='',name=raw;const m=raw.match(/^(\\d+(?:[.,]\\d+)?\\s?(?:kg|g|l|ud|uds)?)\\s+(.+)$/i);
     if(m){qty=m[1];name=m[2]}
     addProductFromCatalog(name,qty,undefined,prodTargetId());inp.value='';
   };
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')addP()});
   const productRows=hist.filter(x=>x.name).slice(0,40);
+  const grouped=[];
+  for(const cat of cats()){
+    const group=productRows.filter(p=>(cats().includes(p.cat)?p.cat:'Otros')===cat);
+    if(group.length)grouped.push($('div',{class:'catalog-category'},
+      $('div',{class:'section-kicker'},cat),
+      $('div',{class:'manage-card'},group.map(p=>$('div',{class:'manage-row'},
+        $('span',{class:'ico2'},'🛍️'),
+        $('div',{class:'grow'},$('strong',{},p.name),$('small',{},p.cat||'Otros')),
+        $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir'))))));
+  }
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Productos'),
-    $('p',{class:'page-sub'},'Añade rápidamente productos a tu lista desde tu catálogo habitual.'),
+    $('p',{class:'page-sub'},'Los productos se agrupan por categorías siguiendo el orden que establezcas en Categorías.'),
     targetRow(),$('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
-    $('div',{class:'section-kicker'},'Productos habituales'),
-    productRows.length?$('div',{class:'manage-card'},productRows.map(p=>$('div',{class:'manage-row'},
-      $('span',{class:'ico2'},'🛍️'),
-      $('div',{class:'grow'},$('strong',{},p.name),$('small',{},p.cat||'Otros')),
-      $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir')))):
-      $('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
+    productRows.length?grouped:$('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
     bottomNav());
 }
+
 function renderList(){
   const l=lists.find(x=>x.id===cur)||{name:'Lista',icon:'📝'};
   const input=$('input',{id:'in',placeholder:'Añadir producto (ej. 2 leche)',enterkeyhint:'done',list:'sug',autocomplete:'off'});
