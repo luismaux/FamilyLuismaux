@@ -1,4 +1,4 @@
-const N='family-luismaux-v3';
+const N='family-luismaux-v4';
 self.addEventListener('install',e=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
