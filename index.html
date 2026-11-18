@@ -429,13 +429,21 @@ function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.in
 function pick(id){navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
 function goHome(){inList=false;navView='home';showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
 // ---- Botón Atrás de Android: "Pulsa nuevamente para salir" ----
-// Historial de la app: [base, guarda]. Con la guarda puesta, el primer Atrás cae en
-// "base" y lo capturamos para enseñar el aviso. En ese momento NO volvemos a poner la
-// guarda: así el segundo Atrás (dentro de 2,5 s) lo gestiona el sistema y cierra la app.
-// Si pasa el tiempo, o el usuario toca la pantalla, o vuelve a la app, se repone la guarda.
-let exitArmed=false,exitTimer=null;
+// Chrome ignora al pulsar Atrás las entradas de historial que una página crea sin que el
+// usuario haya tocado la pantalla. Por eso la "guarda" se crea SOLO dentro de un toque
+// (nunca al cargar ni desde un temporizador) y después NO se vuelve a crear: se recupera
+// con history.forward(), que no crea entradas nuevas.
+// Historial: [base, guarda]. Primer Atrás -> cae en "base": se enseña el aviso. Segundo
+// Atrás (con el aviso visible) -> lo gestiona el sistema y cierra la app. Cuando el aviso
+// desaparece, o el usuario toca la pantalla, se vuelve a la guarda con history.forward().
+let exitArmed=false,exitTimer=null,fwdAt=0,fwdKnown=false;
 const hasGuard=()=>!!(history.state&&history.state.fl==='guard');
-function ensureGuard(){if(!hasGuard()){try{history.pushState({fl:'guard'},'')}catch(e){}}}
+const canFwd=()=>window.navigation?!!navigation.canGoForward:fwdKnown;
+function toGuard(gesture){
+  if(hasGuard())return;
+  if(canFwd()){if(Date.now()-fwdAt>400){fwdAt=Date.now();fwdKnown=false;try{history.forward()}catch(e){}}return}
+  if(gesture){try{history.pushState({fl:'guard'},'');fwdKnown=false}catch(e){}}
+}
 function showExitToast(){
   let toast=document.getElementById('exit-toast');
   if(!toast){toast=document.createElement('div');toast.id='exit-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast)}
@@ -444,12 +452,12 @@ function showExitToast(){
   void toast.offsetWidth;
   toast.classList.add('show');
 }
-function disarmExit(){
+function disarmExit(gesture){
   clearTimeout(exitTimer);exitArmed=false;
   const t=document.getElementById('exit-toast');if(t)t.classList.remove('show');
-  ensureGuard();
+  toGuard(gesture);
 }
-function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTimer=setTimeout(disarmExit,2500)}
+function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTimer=setTimeout(()=>disarmExit(false),2500)}
 // Cierra primero diálogos y paneles abiertos; devuelve true si cerró alguno.
 function closeOverlays(){
   if(editing||categoryEditing||showIcons){editing=null;categoryEditing=null;showIcons=false;render();return true}
@@ -458,15 +466,17 @@ function closeOverlays(){
 // Flecha ‹ de la pantalla de una lista: no toca el historial.
 function back(){if(!closeOverlays())goHome()}
 window.addEventListener('popstate',()=>{
-  if(hasGuard())return;
-  if(closeOverlays()){ensureGuard();return}
-  if(inList||navView!=='home'){goHome();ensureGuard();return}
+  if(hasGuard())return;                       // estamos en la guarda: nada que hacer
+  fwdKnown=true;                              // la guarda sigue ahí delante
+  // Hemos caído en "base": el Atrás del usuario se ha consumido la guarda.
+  if(closeOverlays()){toGuard(false);return}
+  if(inList||navView!=='home'){goHome();toGuard(false);return}
   armExit();
 });
-document.addEventListener('pointerdown',()=>{if(exitArmed)disarmExit()},true);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&exitArmed)disarmExit()});
-try{if(!hasGuard())history.replaceState({fl:'base'},'')}catch(e){}
-ensureGuard();
+['pointerup','click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{
+  if(exitArmed)disarmExit(true);else toGuard(true);
+},true));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&exitArmed)disarmExit(false)});
 function newList(){
   const n=(prompt('Nombre de la lista (ej. Farmacia)')||'').trim();if(!n)return;
   const r=lcol().doc();r.set({name:n,icon:autoIcon(n),ts:Date.now()});pick(r.id);
@@ -608,7 +618,8 @@ function renderHome(){
     $('div',{class:'section-kicker'},'Accesos rápidos'),
     $('div',{class:'manage-card'},$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
-      $('button',{class:'pill-action',onclick:newList},'Nueva +')))),
+      $('button',{class:'pill-action',onclick:newList},'Nueva +'))),
+    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 13')),
     bottomNav());
 }
 const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
