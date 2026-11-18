@@ -169,6 +169,11 @@ li{padding:13px 14px;border-color:#e1e8f1;min-height:60px}
 .edit-actions{display:flex;gap:10px;margin-top:18px}
 .edit-actions button{flex:1;min-height:47px}
 @media(max-width:380px){.top h1{font-size:21px}.tile{min-height:136px}.ico{font-size:47px}.wrap{padding-left:13px;padding-right:13px}.product-card{min-height:137px}}
+
+/* Ajuste solicitado: tarjetas de producto más compactas, no los dibujos internos */
+.products-grid{align-items:start;gap:12px}
+.product-card{width:min(100%,154px);justify-self:center;min-height:0;aspect-ratio:1.13/1;padding:10px 8px 9px;border-radius:17px}
+@media(max-width:380px){.product-card{width:min(100%,142px);min-height:0;aspect-ratio:1.13/1;padding:9px 7px}}
 </style>
 </head>
 <body>
