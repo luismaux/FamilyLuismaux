@@ -1,6 +1,6 @@
-const N='family-luismaux-v9';
+const N='family-luismaux-v10';
 self.addEventListener('install',e=>self.skipWaiting());
-self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
+self.addEventListener('activate',e=>e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('family-luismaux-')&&k!==N).map(k=>caches.delete(k)));await self.clients.claim()})()));
 self.addEventListener('fetch',e=>{
   const u=e.request.url;
   if(e.request.method!=='GET'||!u.startsWith('http')||/firestore\.googleapis|identitytoolkit|securetoken/.test(u))return;
