@@ -317,6 +317,11 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .subin{max-width:620px;margin:0 auto;display:flex;align-items:center;gap:10px}
 .subbar .back{color:#0755b5;font-size:38px;padding:0 8px 4px 0}
 .subbar h1{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:21px;color:#17385f}
+.tile{position:relative}
+.dot{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:#e5322d;border:3px solid #fff;box-shadow:0 2px 8px #0005}
+.new-by{font-size:12px;font-weight:700;background:#ffffff2e;border-radius:999px;padding:3px 10px}
+.nav-btn{position:relative}
+.nav-dot{position:absolute;top:6px;right:calc(50% - 24px);width:13px;height:13px;border-radius:50%;background:#e5322d;border:2px solid #0a63c9}
 </style>
 </head>
 <body>
@@ -413,6 +418,7 @@ async function start(){
   if(unsubL)unsubL();
   unsubL=lcol().orderBy('ts').onSnapshot(s=>{
     lists=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(inList)markSeen(lists.find(x=>x.id===cur));
     if(!lists.length){if(!s.metadata.fromCache)lcol().add({name:'Compra',icon:'🛒',ts:Date.now()});softRender();return}
     if(inList&&!lists.some(l=>l.id===cur))goHome();
     else softRender();
@@ -440,7 +446,19 @@ const col=()=>lcol().doc(cur).collection('items');
 const ICONS=['🛒','🥦','🍎','🥖','🥩','🐟','🥛','🧴','🧹','💊','🔧','👕','🎁','🐶','🏠','🍕','🥤','📝'];
 const KW=[['🛒',['compra','super','mercado']],['💊',['farmacia','medic']],['🔧',['ferret','bricol','herramient']],['🧹',['limpieza','casa','hogar']],['👕',['ropa','zapat']],['🎁',['regalo','cumple']],['🐶',['mascota','perro','gato']],['🥦',['verdura','fruta']],['🥖',['panader','pan']],['🥩',['carnic','carne']],['🥤',['bebida','fiesta']],['🍕',['cena','comida','restaurante']]];
 function autoIcon(n){n=n.toLowerCase();for(const [e,ks] of KW)if(ks.some(k=>n.includes(k)))return e;return '📝'}
-function pick(id){navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
+// ---- Novedades: punto rojo en las listas a las que otra persona ha añadido productos ----
+// Al añadir, la lista guarda quién y cuándo (lastBy, lastTs). Cada móvil recuerda qué valor de
+// lastTs vio al abrir cada lista; si es distinto y lo puso otra persona, hay novedad.
+const seenMap=()=>{try{return JSON.parse(ls('vistas')||'{}')||{}}catch(e){return {}}};
+function markSeen(l){
+  if(!l||!l.lastTs)return;
+  const m=seenMap();if(m[l.id]===String(l.lastTs))return;
+  m[l.id]=String(l.lastTs);ls('vistas',JSON.stringify(m));
+}
+const hasNews=l=>!!(l&&l.lastTs&&l.lastBy&&l.lastBy!==me&&seenMap()[l.id]!==String(l.lastTs));
+const anyNews=()=>lists.some(l=>!(inList&&l.id===cur)&&hasNews(l));
+function touchList(id){lcol().doc(id).update({lastTs:Date.now(),lastBy:me}).catch(()=>{})}
+function pick(id){markSeen(lists.find(x=>x.id===id));navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
 function goHome(){inList=false;navView='home';showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
 // ---- Botón Atrás de Android: "Pulsa nuevamente para salir" ----
 // Chrome ignora al pulsar Atrás las entradas de historial que una página crea sin que el
@@ -615,6 +633,7 @@ function put(n,q,c){
   c=c||(hh&&hh.cat&&cats().includes(hh.cat)?hh.cat:null)||catOf(n);
   if(ex)col().doc(ex.id).update({done:false});
   else col().add({name:n,qty:q,cat:c,done:false,by:me,ts:Date.now()});
+  touchList(cur);
   hcol().doc(k).set({name:n,qty:q,cat:c,count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
 }
 function habs(){
@@ -693,12 +712,13 @@ function bottomNav(){
       class:'nav-btn'+(navView===id?' active':''),
       'aria-current':navView===id?'page':'false',
       onclick:()=>{navView=id;inList=false;editing=null;if(unsub){unsub();unsub=null}items=[];render()}
-    },$('span',{class:'nav-ico','aria-hidden':'true'},ico),$('span',{},label)))
+    },$('span',{class:'nav-ico','aria-hidden':'true'},ico),$('span',{},label),id==='home'&&(inList||navView!=='home')&&anyNews()?$('span',{class:'nav-dot','aria-hidden':'true'}):''))
   );
 }
 function renderHome(){
-  const tiles=lists.map((l,i)=>$('button',{class:'tile t'+(i%4),onclick:()=>{navView='home';pick(l.id)}},
-    $('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name)));
+  const tiles=lists.map((l,i)=>{const nw=hasNews(l);return $('button',{class:'tile t'+(i%4),'aria-label':l.name+(nw?', hay novedades de '+l.lastBy:''),onclick:()=>{navView='home';pick(l.id)}},
+    nw?$('span',{class:'dot','aria-hidden':'true'}):'',
+    $('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name),nw?$('span',{class:'new-by'},'Novedad de '+l.lastBy):'')});
   tiles.push($('button',{class:'tile plus',onclick:newList},$('span',{class:'ico'},'+'),$('span',{class:'ln'},'Nueva lista')));
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
@@ -709,7 +729,7 @@ function renderHome(){
     $('div',{class:'manage-card'},$('div',{class:'manage-row'},
       $('span',{class:'ico2'},'🛒'),$('div',{class:'grow'},$('strong',{},'Listas compartidas'),$('small',{},lists.length+' listas disponibles')),
       $('button',{class:'pill-action',onclick:newList},'Nueva +'))),
-    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 14')),
+    $('p',{class:'page-sub',style:'text-align:center;opacity:.6;font-size:12px'},'Family Luismaux · versión 15')),
     bottomNav());
 }
 const CATEGORY_ICON_OPTIONS=['🥬','🥛','🥩','🥖','🧺','🥤','🧽','🧴','🍎','🍌','🍅','🧀','🥚','🍗','🐟','🍚','🍝','🧂','🧊','🍕','🍫','☕','🧻','🧼','🏠','🐶','📦','🛒','🌿','🧹'];
@@ -822,6 +842,7 @@ function addProductFromCatalog(name,qty,cat,target){
     if(done)done.ref.update({done:false});
     else ref.add({name:normalized,qty:qty||'',cat:c,done:false,by:me,ts:Date.now()});
     hcol().doc(productKey).set({name:normalized,qty:qty||'',cat:c,count:firebase.firestore.FieldValue.increment(1),last:Date.now()},{merge:true});
+    touchList(t.id);
     showMsg('Añadido a «'+t.name+'»');
   }).catch(e=>alert('No se pudo añadir el producto: '+e.message));
 }
