@@ -185,10 +185,10 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .products-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:8px}
 .product-card{width:100%;justify-self:stretch;min-height:0;aspect-ratio:1/1;padding:8px 5px;border-radius:15px;gap:5px}
 .product-card .prod-icon{font-size:24px}
-.product-card .nm{font-size:13px;line-height:1.15}
-.product-card .q{font-size:11px}
+.product-card .nm{font-size:15.5px;line-height:1.15}
+.product-card .q{font-size:12px}
 .product-card .chk{top:6px;right:6px;width:21px;height:21px}
-@media(max-width:380px){.product-card{width:100%;min-height:0;aspect-ratio:1/1;padding:7px 4px}.product-card .nm{font-size:12px}}
+@media(max-width:380px){.product-card{width:100%;min-height:0;aspect-ratio:1/1;padding:7px 4px}.product-card .nm{font-size:14px}}
 
 /* ===== Corrección de la pantalla Categorías ===== */
 .category-grid{
@@ -426,13 +426,13 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='18';
+const APP_VERSION='20';
 // ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
 let uiDlg=null;
 function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
   return new Promise(resolve=>{
     if(uiDlg)uiDlg.cancel();
-    const field=input?$('input',{class:'ui-input',value:input.value||'',placeholder:input.placeholder||'',autocomplete:'off','aria-label':message}):null;
+    const field=input?$('input',{class:'ui-input',value:input.value||'',placeholder:input.placeholder||'',type:input.type||'text',autocomplete:'off','aria-label':message}):null;
     const cancelVal=field?null:false;
     let done=false;
     const finish=v=>{if(done)return;done=true;document.removeEventListener('keydown',onKey,true);overlay.remove();uiDlg=null;resolve(v)};
@@ -457,7 +457,16 @@ function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCanc
 }
 const uiAlert=message=>uiDialog({message,showCancel:false});
 const uiConfirm=(message,o={})=>uiDialog({message,okText:o.okText||'Aceptar',danger:!!o.danger});
-const uiPrompt=(message,value='',o={})=>uiDialog({message,input:{value,placeholder:o.placeholder||''},okText:o.okText||'Aceptar'});
+const uiPrompt=(message,value='',o={})=>uiDialog({message,input:{value,placeholder:o.placeholder||'',type:o.type},okText:o.okText||'Aceptar'});
+// Clave para guardar o restaurar copias (cámbiala aquí si quieres otra)
+const BACKUP_KEY='luismaux';
+async function askBackupKey(){
+  const v=await uiPrompt('Escribe la clave para continuar con la copia de seguridad.','',{type:'password',placeholder:'Clave'});
+  if(v===null||v===undefined)return false;
+  if(v.trim().toLowerCase()===BACKUP_KEY)return true;
+  setMsg='Clave incorrecta.';render();
+  return false;
+}
 let catOrder=[];
 let db,unsub,unsubL,items=[],lists=[],hist=[],unsubH,custom=[],catIcons={},unsubC,showCats=false,inList=false,showIcons=false,showSettings=false,started=false,setMsg='',setBusy=false,editing=null,categoryEditing=null,navView='home',cur=ls('lista'),code=ls('fam'),me=ls('yo');
 
@@ -635,6 +644,7 @@ function downloadText(name,text){
 }
 async function exportBackup(){
   if(setBusy)return;
+  if(!(await askBackupKey()))return;
   setBusy=true;setMsg='Preparando la copia…';render();
   try{
     const grab=async q=>(await q.get({source:'server'})).docs.map(d=>({id:d.id,data:d.data()}));
@@ -656,6 +666,7 @@ function pickBackupFile(){
 const cleanData=o=>{const r={};if(o&&typeof o==='object'&&!Array.isArray(o))for(const k of Object.keys(o)){const v=o[k];if(['string','number','boolean'].includes(typeof v))r[k]=v}return r};
 const okId=id=>typeof id==='string'&&id.length>0&&id.length<200&&!id.includes('/');
 async function restoreBackup(file){
+  if(!(await askBackupKey()))return;
   let d;
   try{d=JSON.parse(await file.text())}catch(e){setMsg='El archivo no es una copia válida.';render();return}
   if(!d||d.app!=='FamilyLuismaux'||!Array.isArray(d.listas)||!Array.isArray(d.historial)||!Array.isArray(d.categorias)){setMsg='Este archivo no es una copia de Family Luismaux.';render();return}
@@ -1157,6 +1168,19 @@ function render(){
   measureHead();
 }
 
+// ---- Ventana para instalar la app (Android/Chrome) ----
+let deferredInstall=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+const installSnoozed=()=>{const t=+ls('instalar_no');return t&&Date.now()-t<3*24*3600*1000};
+async function offerInstall(){
+  if(!deferredInstall||isStandalone()||installSnoozed()||uiDlg)return;
+  const ok=await uiDialog({message:'¿Quieres instalar Family Luismaux en tu móvil? Se abrirá como una app, a pantalla completa y con su icono.',okText:'Instalar',cancelText:'Ahora no'});
+  if(!ok){ls('instalar_no',String(Date.now()));return}
+  const ev=deferredInstall;deferredInstall=null;
+  try{ev.prompt();const r=await ev.userChoice;if(r.outcome!=='accepted')ls('instalar_no',String(Date.now()))}catch(e){}
+}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;setTimeout(offerInstall,1500)});
+addEventListener('appinstalled',()=>{deferredInstall=null;ls('instalar_no',null);showMsg('App instalada')});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 (me&&code)?start():login();
 </script>
