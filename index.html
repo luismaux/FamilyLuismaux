@@ -150,6 +150,8 @@ li{padding:13px 14px;border-color:#e1e8f1;min-height:60px}
 .manage-row .grow{flex:1;min-width:0}
 .manage-row strong{display:block;font-size:16px}
 .manage-row small{color:#718096}
+.prod-btns{display:flex;gap:6px;flex:none}
+.danger-pill{border-color:#f0b9b9;background:#fff0f0;color:#b42318}
 .pill-action{border:1px solid #b9d4f3;background:#edf5ff;color:#0755b5;border-radius:12px;padding:8px 11px;font:inherit;font-weight:700}
 .section-kicker{font-size:12px;color:#718096;text-transform:uppercase;letter-spacing:.08em;font-weight:800}
 /* Productos de la lista en tarjetas cuadradas */
@@ -424,7 +426,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='17';
+const APP_VERSION='18';
 // ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
 let uiDlg=null;
 function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
@@ -716,12 +718,12 @@ function put(n,q,c){
 }
 function habs(){
   const pend=new Set(items.filter(i=>!i.done).map(i=>key(i.name)));
-  const h=hist.filter(x=>x.name&&!pend.has(key(x.name))).slice(0,12);
+  const h=hist.filter(x=>x.name&&!x.nohab&&!pend.has(key(x.name))).slice(0,12);
   if(!h.length)return '';
   return $('div',{class:'hab'},$('span',{class:'t'},'Habituales'),h.map(x=>
     $('span',{class:'chip'},
       $('button',{class:'cn',onclick:()=>put(x.name,x.qty||'',x.cat)},x.name),
-      $('button',{class:'cx','aria-label':'Quitar '+x.name+' de habituales',onclick:()=>hcol().doc(key(x.name)).delete()},'×'))));
+      $('button',{class:'cx','aria-label':'Quitar '+x.name+' de habituales',onclick:()=>{hcol().doc(key(x.name)).set({nohab:true},{merge:true});showMsg('Quitado de habituales (sigue en Productos)')}},'×'))));
 }
 const toggle=i=>col().doc(i.id).update({done:!i.done});
 const del=i=>col().doc(i.id).delete();
@@ -1043,6 +1045,45 @@ function addProductFromCatalog(name,qty,cat,target){
     showMsg('Añadido a «'+t.name+'»');
   }).catch(e=>uiAlert('No se pudo añadir el producto: '+e.message));
 }
+function deleteCatalogProduct(p){
+  uiConfirm('¿Eliminar «'+p.name+'» de Productos? Las listas que ya lo tengan no se tocan.',{okText:'Eliminar',danger:true}).then(ok=>{
+    if(!ok)return;
+    hcol().doc(key(p.name)).delete().then(()=>showMsg('Producto eliminado')).catch(e=>uiAlert('No se pudo eliminar: '+e.message));
+  });
+}
+function editCatalogProduct(p){
+  const n=$('input',{value:p.name,'aria-label':'Nombre del producto'});
+  const q=$('input',{value:p.qty||'',placeholder:'Cantidad (ej. 2, 500 g)','aria-label':'Cantidad'});
+  const c=$('select',{'aria-label':'Categoría'},cats().map(o=>$('option',o===p.cat?{selected:''}:{},o)));
+  const hb=$('input',p.nohab?{type:'checkbox',id:'hb-chk'}:{type:'checkbox',id:'hb-chk',checked:''});
+  const close=()=>{overlay.remove();render()};
+  const save=async()=>{
+    const nm=n.value.trim();if(!nm)return n.focus();
+    const name=nm.charAt(0).toUpperCase()+nm.slice(1);
+    const data={name,qty:q.value.trim(),cat:c.value,nohab:!hb.checked};
+    const oldK=key(p.name),newK=key(name);
+    try{
+      if(newK!==oldK){
+        const ex=await hcol().doc(newK).get();
+        if(ex.exists){await uiAlert('Ya existe un producto con ese nombre.');return}
+        const extra={};if(p.count!==undefined)extra.count=p.count;if(p.last!==undefined)extra.last=p.last;if(p.photo)extra.photo=p.photo;
+        await hcol().doc(newK).set({...extra,...data});
+        await hcol().doc(oldK).delete();
+      }else await hcol().doc(oldK).set(data,{merge:true});
+      showMsg('Producto actualizado');close();
+    }catch(e){uiAlert('No se pudo guardar: '+e.message)}
+  };
+  [n,q].forEach(x=>x.addEventListener('keydown',e=>{if(e.key==='Enter')save()}));
+  const overlay=$('div',{class:'edit-overlay',onclick:e=>{if(e.target===overlay)close()}});
+  overlay.append($('div',{class:'edit-dialog',onclick:e=>e.stopPropagation()},
+    $('div',{class:'edit-title'},'✎  Editar producto'),
+    $('label',{},'Nombre del producto'),n,
+    $('label',{},'Cantidad'),q,
+    $('label',{},'Categoría'),c,
+    $('label',{style:'display:flex;align-items:center;gap:10px;margin-top:12px'},hb,'Mostrar en habituales'),
+    $('div',{class:'edit-actions'},$('button',{class:'btn1',onclick:save},'Guardar'),$('button',{class:'btn2',onclick:close},'Cancelar'))));
+  document.body.appendChild(overlay);setTimeout(()=>n.focus(),0);
+}
 function groupedProducts(rows){
   const order=cats();
   const out=[];
@@ -1052,8 +1093,11 @@ function groupedProducts(rows){
     out.push($('div',{class:'prod-group'},$('span',{'aria-hidden':'true'},catIco(c)),c),
       $('div',{class:'manage-card'},g.map(p=>$('div',{class:'manage-row'},
         (p.photo?photoEl(p.photo):$('span',{class:'ico2'},'🛍️')),
-        $('div',{class:'grow'},$('strong',{},p.name),p.qty?$('small',{},p.qty):''),
-        $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir')))));
+        $('div',{class:'grow'},$('strong',{},p.name),$('small',{},[p.qty||'',p.nohab?'No es habitual':''].filter(Boolean).join(' · '))),
+        $('div',{class:'prod-btns'},
+          $('button',{class:'pill-action',onclick:()=>addProductFromCatalog(p.name,p.qty||'',p.cat,prodTargetId())},'+ Añadir'),
+          $('button',{class:'pill-action','aria-label':'Editar '+p.name,onclick:()=>editCatalogProduct(p)},'✎'),
+          $('button',{class:'pill-action danger-pill','aria-label':'Eliminar '+p.name,onclick:()=>deleteCatalogProduct(p)},'🗑'))))));
   });
   return $('div',{},out);
 }
@@ -1069,9 +1113,9 @@ function renderProductsPage(){
   const productRows=hist.filter(x=>x.name).slice(0,40);
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Productos'),
-    $('p',{class:'page-sub'},'Añade rápidamente productos a tu lista desde tu catálogo habitual.'),
+    $('p',{class:'page-sub'},'Añade productos a tu lista desde tu catálogo. Con ✎ los editas y con 🗑 los eliminas.'),
     targetRow(),$('div',{class:'bar'},inp,$('button',{class:'add',onclick:addP},'Añadir')),
-    $('div',{class:'section-kicker'},'Productos habituales'),
+    $('div',{class:'section-kicker'},'Tus productos'),
     productRows.length?groupedProducts(productRows):
       $('div',{class:'empty'},'Aún no hay productos habituales. Añade productos a una lista y aparecerán aquí.')),
     bottomNav());
