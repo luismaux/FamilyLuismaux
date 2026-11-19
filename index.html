@@ -359,6 +359,36 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .new-by{font-size:12px;font-weight:700;background:#ffffff2e;border-radius:999px;padding:3px 10px}
 .nav-btn{position:relative}
 .nav-dot{position:absolute;top:6px;right:calc(50% - 24px);width:13px;height:13px;border-radius:50%;background:#e5322d;border:2px solid #0a63c9}
+
+/* ---- Recetas ---- */
+.bottom-nav{grid-template-columns:repeat(4,1fr);gap:6px}
+.recipe-add{width:100%;min-height:52px;margin:6px 0 16px;cursor:pointer}
+.recipe-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.recipe-card{display:flex;flex-direction:column;padding:0;overflow:hidden;background:#fff;border:1px solid #d5dfeb;border-radius:19px;box-shadow:0 3px 10px #284c7010;cursor:pointer;text-align:left;font:inherit;color:#17385f}
+.recipe-card:active{background:#f0f6ff}
+.recipe-img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:#e7f1ff}
+.recipe-img.noimg{display:grid;place-items:center;font-size:40px}
+.recipe-name{padding:10px 12px 12px;font-size:16px;font-weight:800;line-height:1.2;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.recipe-photos{display:grid;gap:10px}
+.recipe-photo{width:100%;max-height:360px;object-fit:cover;border-radius:18px;display:block;box-shadow:0 3px 10px #284c7018}
+.recipe-sec{background:#fff;border:1px solid #d7e0ec;border-radius:18px;padding:14px 16px;margin-top:12px;box-shadow:0 3px 12px #31577c0b}
+.recipe-sec h2{margin:0 0 8px;font-size:16px;color:#0755b5}
+.recipe-text{white-space:pre-wrap;line-height:1.5;font-size:16.5px;overflow-wrap:anywhere;color:#172b49}
+.recipe-acts{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.recipe-acts button{min-height:50px;font-size:17px}
+.btn2.danger{border-color:#d84b4b;color:#b42318}
+.recipe-form label{display:block;font-size:13px;font-weight:800;color:#52677f;margin:14px 0 6px}
+.recipe-form textarea{width:100%;box-sizing:border-box;font:inherit;font-size:17px;line-height:1.4;padding:12px 14px;border:1.5px solid #c9d7e8;border-radius:12px;background:#fff;color:#172b49;resize:vertical}
+.recipe-form textarea:focus-visible{outline:3px solid var(--sun);outline-offset:1px}
+.photo-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border-radius:14px}
+.pslot{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;border:1.5px solid #c9d7e8;background:#f4f8fd}
+.pslot img{width:100%;height:100%;object-fit:cover;display:block}
+.pslot.pempty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed #9fb8d6;color:#0755b5;font:inherit;font-weight:700;font-size:13px;cursor:pointer;text-align:center;padding:6px}
+.pico{font-size:30px;line-height:1}
+.ptag{position:absolute;left:6px;bottom:6px;background:#0755b5cc;color:#fff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px}
+.pdel{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:0;background:#fff;color:#b42318;font-size:22px;line-height:1;font-weight:700;box-shadow:0 1px 5px #0004;cursor:pointer}
+.recipe-form .field-err,.field-err{border-color:#d84b4b!important;box-shadow:0 0 0 3px #d84b4b30}
+.form-err{color:#d84b4b;font-size:14px;font-weight:700;margin-top:12px;min-height:0}
 </style>
 </head>
 <body>
@@ -426,7 +456,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='20';
+const APP_VERSION='21';
 // ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
 let uiDlg=null;
 function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
@@ -506,6 +536,8 @@ async function start(){
   unsubH=hcol().orderBy('count','desc').limit(40).onSnapshot(s=>{hist=s.docs.map(d=>d.data());softRender()},()=>{});
   if(unsubC)unsubC();
   unsubC=ccol().orderBy('ts').onSnapshot(s=>{const docs=s.docs.map(d=>({id:d.id,...d.data()}));custom=docs.filter(x=>!x.system);try{const od=docs.find(x=>x.id==='orden');const a=od&&od.order?JSON.parse(od.order):[];catOrder=Array.isArray(a)?a.filter(n=>typeof n==='string'):[]}catch(e){catOrder=[]}catIcons={};docs.filter(x=>x.system&&x.name&&x.icon).forEach(x=>catIcons[x.name]=x.icon);softRender()},()=>{});
+  if(unsubR)unsubR();
+  unsubR=rcol().orderBy('ts','desc').onSnapshot(s=>{recipes=s.docs.map(d=>({id:d.id,...d.data()}));softRender()},()=>{});
   render();
 }
 function subItems(){
@@ -538,7 +570,7 @@ const hasNews=l=>!!(l&&l.lastTs&&l.lastBy&&l.lastBy!==me&&seenMap()[l.id]!==Stri
 const anyNews=()=>lists.some(l=>!(inList&&l.id===cur)&&hasNews(l));
 function touchList(id){lcol().doc(id).update({lastTs:Date.now(),lastBy:me}).catch(()=>{})}
 function pick(id){markSeen(lists.find(x=>x.id===id));navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
-function goHome(){inList=false;navView='home';showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
+function goHome(){inList=false;navView='home';recipeView=null;recipeForm=null;showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
 // ---- Botón Atrás de Android: "Pulsa nuevamente para salir" ----
 // Chrome ignora al pulsar Atrás las entradas de historial que una página crea sin que el
 // usuario haya tocado la pantalla. Por eso la "guarda" se crea SOLO dentro de un toque
@@ -573,6 +605,8 @@ function armExit(){exitArmed=true;showExitToast();clearTimeout(exitTimer);exitTi
 function closeOverlays(){
   if(uiDlg){uiDlg.cancel();return true}
   if(editing||categoryEditing||showIcons||showSettings){editing=null;categoryEditing=null;showIcons=false;showSettings=false;render();return true}
+  if(recipeForm){recipeForm=null;render();return true}
+  if(recipeView){recipeView=null;render();return true}
   return false;
 }
 // Flecha ‹ de la pantalla de una lista: no toca el historial.
@@ -648,11 +682,11 @@ async function exportBackup(){
   setBusy=true;setMsg='Preparando la copia…';render();
   try{
     const grab=async q=>(await q.get({source:'server'})).docs.map(d=>({id:d.id,data:d.data()}));
-    const [listas,historial,categorias]=await Promise.all([grab(lcol()),grab(hcol()),grab(ccol())]);
+    const [listas,historial,categorias,recetas]=await Promise.all([grab(lcol()),grab(hcol()),grab(ccol()),grab(rcol())]);
     await Promise.all(listas.map(async l=>{l.items=await grab(lcol().doc(l.id).collection('items'))}));
     const now=new Date(),p2=n=>String(n).padStart(2,'0');
     const stamp=now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate());
-    downloadText('FamilyLuismaux-copia-'+stamp+'.json',JSON.stringify({app:'FamilyLuismaux',formato:1,fecha:now.toISOString(),listas,historial,categorias}));
+    downloadText('FamilyLuismaux-copia-'+stamp+'.json',JSON.stringify({app:'FamilyLuismaux',formato:1,fecha:now.toISOString(),listas,historial,categorias,recetas}));
     setMsg='Copia guardada: '+listas.length+' listas y '+listas.reduce((n,l)=>n+l.items.length,0)+' productos. La encontrarás en Descargas.';
   }catch(e){setMsg='No se pudo guardar la copia. Hace falta conexión.'}
   setBusy=false;render();
@@ -663,7 +697,7 @@ function pickBackupFile(){
   inp.addEventListener('change',()=>{const f=inp.files&&inp.files[0];if(f)restoreBackup(f)});
   inp.click();
 }
-const cleanData=o=>{const r={};if(o&&typeof o==='object'&&!Array.isArray(o))for(const k of Object.keys(o)){const v=o[k];if(['string','number','boolean'].includes(typeof v))r[k]=v}return r};
+const cleanData=o=>{const r={};if(o&&typeof o==='object'&&!Array.isArray(o))for(const k of Object.keys(o)){const v=o[k];if(['string','number','boolean'].includes(typeof v))r[k]=v;else if(Array.isArray(v)&&v.every(x=>typeof x==='string'))r[k]=v}return r};
 const okId=id=>typeof id==='string'&&id.length>0&&id.length<200&&!id.includes('/');
 async function restoreBackup(file){
   if(!(await askBackupKey()))return;
@@ -679,12 +713,14 @@ async function restoreBackup(file){
   });
   d.historial.forEach(h=>{if(h&&okId(h.id))add(hcol().doc(h.id),h.data)});
   d.categorias.forEach(c=>{if(c&&okId(c.id))add(ccol().doc(c.id),c.data)});
+  (Array.isArray(d.recetas)?d.recetas:[]).forEach(r=>{if(r&&okId(r.id))add(rcol().doc(r.id),r.data)});
   const nProd=d.listas.reduce((n,l)=>n+(l&&Array.isArray(l.items)?l.items.length:0),0);
+  const nRec=Array.isArray(d.recetas)?d.recetas.filter(r=>r&&okId(r.id)).length:0;
   const fecha=d.fecha&&!isNaN(new Date(d.fecha))?new Date(d.fecha).toLocaleDateString('es-ES'):'fecha desconocida';
-  if(!(await uiConfirm('Copia del '+fecha+':\n'+d.listas.length+' listas, '+nProd+' productos y '+d.categorias.length+' categorías.\n\nSe volverá a crear lo que falte y lo que coincida se sobrescribirá con lo de la copia. No se borra nada de lo actual.\n\n¿Restaurar?',{okText:'Restaurar'})))return;
+  if(!(await uiConfirm('Copia del '+fecha+':\n'+d.listas.length+' listas, '+nProd+' productos, '+d.categorias.length+' categorías y '+nRec+' recetas.\n\nSe volverá a crear lo que falte y lo que coincida se sobrescribirá con lo de la copia. No se borra nada de lo actual.\n\n¿Restaurar?',{okText:'Restaurar'})))return;
   setBusy=true;setMsg='Restaurando…';render();
   try{
-    for(let i=0;i<ops.length;i+=400){const b=db.batch();ops.slice(i,i+400).forEach(([r,x])=>b.set(r,x));await b.commit()}
+    for(let i=0;i<ops.length;i+=40){const b=db.batch();ops.slice(i,i+40).forEach(([r,x])=>b.set(r,x));await b.commit()}
     setMsg='Copia restaurada ('+ops.length+' elementos).';
   }catch(e){setMsg='No se pudo restaurar. Inténtalo de nuevo con conexión.'}
   setBusy=false;render();
@@ -693,7 +729,7 @@ async function restoreBackup(file){
 document.addEventListener('pointerdown',e=>{
   if(showSettings&&!(e.target.closest&&e.target.closest('.settings-panel,.gear-btn'))){showSettings=false;render()}
 },true);
-function salir(){started=false;showSettings=false;inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();hist=[];custom=[];cur=null;login()}
+function salir(){started=false;showSettings=false;inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();if(unsubR)unsubR();unsubR=null;recipes=[];recipeView=null;recipeForm=null;hist=[];custom=[];cur=null;login()}
 function catsPanel(){
   if(!showCats)return '';
   const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
@@ -839,13 +875,14 @@ function bottomNav(){
   const entries=[
     ['home','⌂','Inicio'],
     ['categories','▦','Categorías'],
-    ['products','▤','Productos']
+    ['products','▤','Productos'],
+    ['recipes','🍲','Recetas']
   ];
   return $('nav',{class:'bottom-nav','aria-label':'Navegación principal'},
     entries.map(([id,ico,label])=>$('button',{
       class:'nav-btn'+(navView===id?' active':''),
       'aria-current':navView===id?'page':'false',
-      onclick:()=>{navView=id;inList=false;editing=null;if(unsub){unsub();unsub=null}items=[];render()}
+      onclick:()=>{navView=id;inList=false;editing=null;recipeView=null;recipeForm=null;if(unsub){unsub();unsub=null}items=[];render()}
     },$('span',{class:'nav-ico','aria-hidden':'true'},ico),$('span',{},label),id==='home'&&(inList||navView!=='home')&&anyNews()?$('span',{class:'nav-dot','aria-hidden':'true'}):''))
   );
 }
@@ -1156,18 +1193,140 @@ function renderList(){
 // (así no se pierde lo que se está escribiendo). Al cerrar el cuadro se redibuja con los datos nuevos.
 function measureHead(){const h=document.querySelector('.top');if(h)document.documentElement.style.setProperty('--headh',h.offsetHeight+'px')}
 addEventListener('resize',measureHead);
-function softRender(){if(dragActive()||document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
+function softRender(){if(dragActive()||recipeForm||document.querySelector('.edit-overlay,.cat-edit-overlay'))return;render()}
 function render(){
   if(!editing)editPhoto=null;
   const keep=['in','cin','pin'].map(id=>{const e=document.getElementById(id);return e?[id,e.value,document.activeElement===e]:null});
   if(inList)renderList();
   else if(navView==='categories')renderCategoriesPage();
   else if(navView==='products')renderProductsPage();
+  else if(navView==='recipes')renderRecipesPage();
   else renderHome();
   keep.forEach(k=>{if(!k)return;const e=document.getElementById(k[0]);if(e){e.value=k[1];if(k[2])e.focus()}});
   measureHead();
 }
 
+// ---- Recetas ----
+let recipes=[],unsubR=null,recipeView=null,recipeForm=null;
+const rcol=()=>db.collection('familias').doc(code).collection('recetas');
+function resizeRecipePhoto(file,max=720){
+  return new Promise((ok,fail)=>{
+    const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{
+      try{
+        const w=img.naturalWidth,h=img.naturalHeight,k=Math.min(1,max/Math.max(w,h));
+        const c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round(h*k);
+        const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+        g.drawImage(img,0,0,c.width,c.height);
+        URL.revokeObjectURL(url);ok(c.toDataURL('image/jpeg',.72));
+      }catch(e){fail(e)}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);fail(new Error('img'))};
+    img.src=url;
+  });
+}
+async function askRecipeKey(msg){
+  const v=await uiPrompt(msg,'',{type:'password',placeholder:'Clave'});
+  if(v===null||v===undefined)return false;
+  if(v.trim().toLowerCase()===BACKUP_KEY)return true;
+  showMsg('Clave incorrecta');return false;
+}
+const recipeBar=title=>$('div',{class:'subbar'},$('div',{class:'subin'},
+  $('button',{class:'back','aria-label':'Volver',onclick:()=>closeOverlays()},'‹'),
+  $('span',{class:'ico2'},'🍲'),$('h1',{},title)));
+function renderRecipesPage(){
+  if(recipeForm)return renderRecipeForm();
+  const cur1=recipeView&&recipes.find(x=>x.id===recipeView);
+  if(recipeView&&!cur1)recipeView=null;
+  if(cur1)return renderRecipeDetail(cur1);
+  const cards=recipes.map(r=>$('button',{class:'recipe-card',type:'button',onclick:()=>{recipeView=r.id;render();window.scrollTo(0,0)}},
+    r.photos&&r.photos[0]?$('img',{class:'recipe-img',src:r.photos[0],alt:'',draggable:'false'}):$('div',{class:'recipe-img noimg'},'🍲'),
+    $('span',{class:'recipe-name'},r.title||'Receta')));
+  app.replaceChildren(topBar(),$('div',{class:'wrap'},
+    $('div',{class:'page-title'},'Recetas'),
+    $('p',{class:'page-sub'},'Las recetas de la familia, guardadas y sincronizadas.'),
+    $('button',{class:'add recipe-add',type:'button',onclick:()=>openRecipeForm()},'+ Añadir receta'),
+    cards.length?$('div',{class:'recipe-grid'},cards):$('div',{class:'empty'},'Aún no hay recetas. Pulsa «Añadir receta» para crear la primera.')),
+    bottomNav());
+}
+function renderRecipeDetail(r){
+  const photos=(r.photos||[]).map(p=>$('img',{class:'recipe-photo',src:p,alt:r.title||''}));
+  app.replaceChildren(topBar(),recipeBar(r.title||'Receta'),$('div',{class:'wrap'},
+    photos.length?$('div',{class:'recipe-photos'},photos):'',
+    $('div',{class:'recipe-sec'},$('h2',{},'Ingredientes'),$('div',{class:'recipe-text'},r.ingredients||'')),
+    $('div',{class:'recipe-sec'},$('h2',{},'Descripción'),$('div',{class:'recipe-text'},r.description||'')),
+    $('div',{class:'recipe-acts'},
+      $('button',{class:'btn2',type:'button',onclick:()=>editRecipe(r)},'✎ Modificar'),
+      $('button',{class:'btn2 danger',type:'button',onclick:()=>deleteRecipe(r)},'🗑 Eliminar'))),
+    bottomNav());
+}
+async function editRecipe(r){
+  if(!(await askRecipeKey('Escribe la clave para modificar la receta.')))return;
+  openRecipeForm(r);
+}
+async function deleteRecipe(r){
+  if(!(await askRecipeKey('Escribe la clave para eliminar la receta.')))return;
+  if(!(await uiConfirm('¿Eliminar la receta «'+(r.title||'')+'»? No se puede deshacer.',{okText:'Eliminar',danger:true})))return;
+  recipeView=null;
+  rcol().doc(r.id).delete().catch(e=>uiAlert('No se pudo eliminar: '+e.message));
+  showMsg('Receta eliminada');render();
+}
+function openRecipeForm(r){
+  recipeForm={id:r?r.id:null,title:r?r.title||'':'',photos:r?[...(r.photos||[])]:[],ingredients:r?r.ingredients||'':'',description:r?r.description||'':''};
+  render();window.scrollTo(0,0);
+}
+function renderRecipeForm(){
+  const f=recipeForm;
+  const t=$('input',{id:'rtitle',placeholder:'Nombre de la receta','aria-label':'Título',value:f.title,maxlength:'80',autocomplete:'off'});
+  const ing=$('textarea',{id:'ring',rows:'6',placeholder:'Un ingrediente por línea (ej. 2 huevos)','aria-label':'Ingredientes'},f.ingredients);
+  const des=$('textarea',{id:'rdesc',rows:'9',placeholder:'Pasos de la receta…','aria-label':'Descripción'},f.description);
+  const clearErr=el=>el.classList.remove('field-err');
+  t.addEventListener('input',()=>{f.title=t.value;clearErr(t)});
+  ing.addEventListener('input',()=>{f.ingredients=ing.value;clearErr(ing)});
+  des.addEventListener('input',()=>{f.description=des.value;clearErr(des)});
+  const slots=$('div',{class:'photo-slots'});
+  const fi=$('input',{type:'file',accept:'image/*',style:'display:none'});
+  const drawSlots=()=>{
+    const n=Math.min(2,f.photos.length+1);
+    slots.replaceChildren(...Array.from({length:n},(_,i)=>{
+      const p=f.photos[i];
+      if(p)return $('div',{class:'pslot'},$('img',{src:p,alt:''}),$('span',{class:'ptag'},i===0?'Principal':'Foto 2'),
+        $('button',{type:'button',class:'pdel','aria-label':'Quitar foto',onclick:()=>{f.photos.splice(i,1);drawSlots()}},'×'));
+      return $('button',{type:'button',class:'pslot pempty',onclick:()=>fi.click()},$('span',{class:'pico'},'📷'),$('span',{},f.photos.length?'Segunda foto (opcional)':'Foto principal'));
+    }));
+  };
+  fi.addEventListener('change',async()=>{
+    const file=fi.files&&fi.files[0];fi.value='';if(!file||f.photos.length>=2)return;
+    try{f.photos.push(await resizeRecipePhoto(file));slots.classList.remove('field-err');drawSlots()}
+    catch(e){uiAlert('No se pudo leer la foto. Prueba con otra.')}
+  });
+  drawSlots();
+  const err=$('div',{class:'form-err',role:'alert'},'');
+  const save=()=>{
+    const title=t.value.trim(),ingr=ing.value.trim(),desc=des.value.trim();
+    const bad=[[t,!title],[slots,!f.photos.length],[ing,!ingr],[des,!desc]];
+    bad.forEach(([el,b])=>el.classList.toggle('field-err',b));
+    const first=bad.find(x=>x[1]);
+    if(first){err.textContent='Rellena todos los campos: título, al menos una foto, ingredientes y descripción.';first[0].scrollIntoView({block:'center',behavior:'smooth'});return}
+    const data={title:title.charAt(0).toUpperCase()+title.slice(1),photos:f.photos,ingredients:ingr,description:desc};
+    if(JSON.stringify(data).length>900000){err.textContent='Las fotos ocupan demasiado. Quita una o usa fotos más sencillas.';return}
+    const id=f.id;recipeForm=null;
+    const fail=e=>uiAlert('No se pudo guardar la receta: '+e.message);
+    if(id){rcol().doc(id).update({...data,mod:Date.now()}).catch(fail);recipeView=id}
+    else{rcol().doc().set({...data,ts:Date.now(),by:me}).catch(fail);recipeView=null}
+    showMsg('Receta guardada');render();window.scrollTo(0,0);
+  };
+  app.replaceChildren(topBar(),recipeBar(f.id?'Editar receta':'Nueva receta'),$('div',{class:'wrap recipe-form'},
+    $('p',{class:'page-sub'},'Todos los campos son obligatorios.'),
+    $('label',{for:'rtitle'},'Título'),t,
+    $('label',{},'Fotos (1 o 2)'),slots,fi,
+    $('label',{for:'ring'},'Ingredientes'),ing,
+    $('label',{for:'rdesc'},'Descripción'),des,
+    err,
+    $('div',{class:'recipe-acts'},
+      $('button',{class:'btn1',type:'button',onclick:save},'Guardar receta'),
+      $('button',{class:'btn2',type:'button',onclick:()=>closeOverlays()},'Cancelar'))));
+}
 // ---- Ventana para instalar la app (Android/Chrome) ----
 let deferredInstall=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
