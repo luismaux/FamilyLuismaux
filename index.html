@@ -402,6 +402,14 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .pick-row.in{opacity:.55;cursor:default}
 .pick-plus{font-weight:800;color:#0755b5;font-size:24px;line-height:1}
 .pick-none{padding:14px 16px;color:#52677f;font-size:15px;line-height:1.4;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+
+.pick-new strong{color:#0755b5}
+.pick-new .ico2{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#e7f1ff;color:#0755b5;font-size:24px;font-weight:800;flex:none}
+
+/* ---- Imagen en las listas ---- */
+.list-photo{display:block;object-fit:cover;flex:none}
+.tile .list-photo{width:68px;height:68px;border-radius:20px;border:2px solid #ffffffb0;box-shadow:0 3px 8px #00336a40}
+.subin .list-photo{width:36px;height:36px;border-radius:11px;border:1.5px solid #ffffffa0}
 </style>
 </head>
 <body>
@@ -469,7 +477,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='25';
+const APP_VERSION='27';
 // ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
 let uiDlg=null;
 function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
@@ -895,11 +903,27 @@ function row(i){
 
 function listBar(l){return $('div',{class:'subbar'},$('div',{class:'subin'},
   $('button',{class:'back','aria-label':'Volver a las listas',onclick:back},'‹'),
-  $('span',{class:'ico2'},l.icon||'📝'),$('h1',{},l.name)))}
+  l.photo?$('img',{class:'list-photo',src:l.photo,alt:'',draggable:'false'}):$('span',{class:'ico2'},l.icon||'📝'),$('h1',{},l.name)))}
 function iconsPanel(){
   if(!showIcons)return '';
-  return $('div',{class:'cp'},$('span',{class:'t'},'Elige un icono para esta lista'),
-    $('div',{class:'ig'},ICONS.map(e=>$('button',{class:'ib',onclick:()=>{showIcons=false;lcol().doc(cur).update({icon:e});render()}},e))));
+  const l=lists.find(x=>x.id===cur)||{};
+  const del=firebase.firestore.FieldValue.delete();
+  const fi=$('input',{type:'file',accept:'image/*',style:'display:none'});
+  fi.addEventListener('change',async()=>{
+    const f=fi.files&&fi.files[0];fi.value='';if(!f)return;
+    try{
+      const ph=await resizePhoto(f);
+      showIcons=false;
+      lcol().doc(cur).update({photo:ph}).catch(e=>uiAlert('No se pudo guardar la imagen: '+e.message));
+      render();
+    }catch(e){uiAlert('No se pudo leer la imagen. Prueba con otra.')}
+  });
+  const btns=[$('button',{type:'button',onclick:()=>fi.click()},l.photo?'📷 Cambiar imagen':'📷 Añadir imagen')];
+  if(l.photo)btns.push($('button',{type:'button',onclick:()=>{showIcons=false;lcol().doc(cur).update({photo:del});render()}},'Quitar imagen'));
+  return $('div',{class:'cp'},$('span',{class:'t'},'Imagen de esta lista'),
+    $('div',{class:'photo-row'},l.photo?photoEl(l.photo):$('span',{class:'photo-empty','aria-hidden':'true'},l.icon||'📝'),$('div',{class:'photo-btns'},btns)),fi,
+    $('span',{class:'t',style:'display:block;margin-top:14px'},'O elige un icono'),
+    $('div',{class:'ig'},ICONS.map(e=>$('button',{class:'ib',onclick:()=>{showIcons=false;lcol().doc(cur).update({icon:e,photo:del});render()}},e))));
 }
 
 function bottomNav(){
@@ -920,7 +944,7 @@ function bottomNav(){
 function renderHome(){
   const tiles=lists.map((l,i)=>{const nw=hasNews(l);return $('button',{class:'tile t'+(i%4),'aria-label':l.name+(nw?', hay novedades de '+l.lastBy:''),onclick:()=>{navView='home';pick(l.id)}},
     nw?$('span',{class:'dot','aria-hidden':'true'}):'',
-    $('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name),nw?$('span',{class:'new-by'},'Novedad de '+l.lastBy):'')});
+    l.photo?$('img',{class:'list-photo',src:l.photo,alt:'',draggable:'false'}):$('span',{class:'ico'},l.icon||'📝'),$('span',{class:'ln'},l.name),nw?$('span',{class:'new-by'},'Novedad de '+l.lastBy):'')});
   tiles.push($('button',{class:'tile plus',onclick:newList},$('span',{class:'ico'},'+'),$('span',{class:'ln'},'Nueva lista')));
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'who2'},me+' · código ',$('b',{},code),' · ',$('button',{onclick:salir},'Cambiar')),
@@ -1130,9 +1154,10 @@ function deleteCatalogProduct(p){
     hcol().doc(key(p.name)).delete().then(()=>showMsg('Producto eliminado')).catch(e=>uiAlert('No se pudo eliminar: '+e.message));
   });
 }
-function editCatalogProduct(p){
+function editCatalogProduct(p,opts){
+  opts=opts||{};
   const isNew=!p;
-  p=p||{name:'',qty:'',cat:null};
+  p=p||{name:opts.name||'',qty:'',cat:null};
   const n=$('input',{value:p.name,placeholder:'Nombre del producto','aria-label':'Nombre del producto'});
   const q=$('input',{value:p.qty||'',placeholder:'Cantidad (ej. 2, 500 g)','aria-label':'Cantidad'});
   const c=$('select',{'aria-label':'Categoría'},cats().map(o=>$('option',o===p.cat?{selected:''}:{},o)));
@@ -1172,7 +1197,9 @@ function editCatalogProduct(p){
         hcol().doc(oldK).delete().catch(fail);
       }else hcol().doc(oldK).set(data,{merge:true}).catch(fail);
     }
-    showMsg(isNew?'Producto creado':'Producto actualizado');close();
+    showMsg(isNew?(opts.onCreated?'Producto creado y añadido':'Producto creado'):'Producto actualizado');
+    if(isNew&&opts.onCreated)opts.onCreated(name,data.qty,data.cat);
+    close();
   };
   [n,q].forEach(x=>x.addEventListener('keydown',e=>{if(e.key==='Enter')save()}));
   const overlay=$('div',{class:'edit-overlay',onclick:e=>{if(e.target===overlay)close()}});
@@ -1183,7 +1210,7 @@ function editCatalogProduct(p){
     $('label',{},'Categoría'),c,
     $('label',{},'Imagen del icono'),prev,fi,
     $('label',{style:'display:flex;align-items:center;gap:10px;margin-top:12px'},hb,'Mostrar en habituales'),
-    $('div',{class:'edit-actions'},$('button',{class:'btn1',onclick:save},isNew?'Crear':'Guardar'),$('button',{class:'btn2',onclick:close},'Cancelar'))));
+    $('div',{class:'edit-actions'},$('button',{class:'btn1',onclick:save},isNew?(opts.onCreated?'Crear y añadir':'Crear'):'Guardar'),$('button',{class:'btn2',onclick:close},'Cancelar'))));
   document.body.appendChild(overlay);setTimeout(()=>n.focus(),0);
 }
 function groupedProducts(rows){
@@ -1225,9 +1252,13 @@ function renderList(){
     const pendKeys=new Set(items.filter(i=>!i.done).map(i=>key(i.name)));
     const found=hist.filter(x=>x.name&&key(x.name).includes(qk))
       .sort((a,b)=>(key(b.name).startsWith(qk)?1:0)-(key(a.name).startsWith(qk)?1:0)).slice(0,10);
+    const typed=input.value.trim();
+    const newRow=()=>$('button',{type:'button',class:'pick-row pick-new',onclick:()=>openNew(typed)},
+      $('span',{class:'ico2'},'＋'),
+      $('div',{class:'grow'},$('strong',{},'Agregar producto'),$('small',{},'Crear «'+typed+'» y añadirlo a la lista')),
+      $('span',{class:'pick-plus'},'+'));
     if(!found.length){
-      results.replaceChildren($('div',{class:'pick-list'},$('div',{class:'pick-none'},'No hay ningún producto con ese nombre. Los productos nuevos se crean en la pestaña Productos.',
-        $('button',{class:'pill-action',type:'button',onclick:()=>{navView='products';inList=false;editing=null;render();window.scrollTo(0,0)}},'Ir a Productos'))));
+      results.replaceChildren($('div',{class:'pick-list'},$('div',{class:'pick-none'},'No hay ningún producto con ese nombre.'),newRow()));
       return;
     }
     results.replaceChildren($('div',{class:'pick-list'},found.map(x=>{
@@ -1239,8 +1270,12 @@ function renderList(){
         x.photo?photoEl(x.photo):$('span',{class:'ico2'},productIcon(x)),
         $('div',{class:'grow'},$('strong',{},x.name),x.qty?$('small',{},x.qty):''),
         $('span',{class:'pick-plus'},inL?'✓':'+'));
-    })));
+    }),found.some(x=>key(x.name)===qk)?'':newRow()));
   };
+  const openNew=name=>editCatalogProduct(null,{name,onCreated:(nm,qty,cat)=>{
+    put(nm,qty,cat);input.value='';showPick();
+    setTimeout(()=>{const e=document.getElementById('in');if(e)e.focus()},80);
+  }});
   input.addEventListener('input',showPick);
   const pend=items.filter(i=>!i.done),done=items.filter(i=>i.done);
   const body=[];
