@@ -361,6 +361,9 @@ html.keyboard-open .edit-actions,html.keyboard-open .cat-edit-actions{position:s
 .nav-dot{position:absolute;top:6px;right:calc(50% - 24px);width:13px;height:13px;border-radius:50%;background:#e5322d;border:2px solid #0a63c9}
 
 /* ---- Recetas ---- */
+.rc-count{font-size:12px;font-weight:700;background:#ffffff2e;border-radius:999px;padding:3px 10px}
+.tile.t3 .rc-count{background:#0755b51a}
+.tile .ln{overflow-wrap:anywhere;text-align:center}
 .bottom-nav{grid-template-columns:repeat(4,1fr);gap:6px}
 .recipe-select{width:100%;min-height:50px;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid #c9d7e8;border-radius:14px;background:#fff;color:#17385f}
 .recipe-select.field-err{border-color:#d84b4b;background:#fff4f3}
@@ -605,7 +608,7 @@ const hasNews=l=>!!(l&&l.lastTs&&l.lastBy&&l.lastBy!==me&&seenMap()[l.id]!==Stri
 const anyNews=()=>lists.some(l=>!(inList&&l.id===cur)&&hasNews(l));
 function touchList(id){lcol().doc(id).update({lastTs:Date.now(),lastBy:me}).catch(()=>{})}
 function pick(id){markSeen(lists.find(x=>x.id===id));navView='home';editing=null;categoryEditing=null;showIcons=false;cur=id;ls('lista',id);subItems();inList=true;render()}
-function goHome(){inList=false;navView='home';recipeView=null;recipeForm=null;recipeCatMgr=false;showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
+function goHome(){inList=false;navView='home';recipeCat=null;recipeView=null;recipeForm=null;recipeCatMgr=false;showIcons=false;editing=null;categoryEditing=null;if(unsub){unsub();unsub=null}items=[];render()}
 // ---- Botón Atrás de Android: "Pulsa nuevamente para salir" ----
 // Chrome ignora al pulsar Atrás las entradas de historial que una página crea sin que el
 // usuario haya tocado la pantalla. Por eso la "guarda" se crea SOLO dentro de un toque
@@ -643,6 +646,7 @@ function closeOverlays(){
   if(recipeForm){recipeForm=null;render();return true}
   if(recipeCatMgr){recipeCatMgr=false;render();return true}
   if(recipeView){recipeView=null;render();return true}
+  if(recipeCat){recipeCat=null;render();return true}
   return false;
 }
 // Flecha ‹ de la pantalla de una lista: no toca el historial.
@@ -837,7 +841,7 @@ async function restoreBackup(file){
 document.addEventListener('pointerdown',e=>{
   if(showSettings&&!(e.target.closest&&e.target.closest('.settings-panel,.gear-btn'))){showSettings=false;render()}
 },true);
-function salir(){started=false;showSettings=false;inList=false;showIcons=false;ls('fam',null);code=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();if(unsubR)unsubR();unsubR=null;recipes=[];recipeView=null;recipeForm=null;hist=[];custom=[];cur=null;login()}
+function salir(){started=false;showSettings=false;inList=false;showIcons=false;ls('fam',null);code=null;recipeCat=null;if(unsub)unsub();unsub=null;if(unsubL)unsubL();if(unsubH)unsubH();if(unsubC)unsubC();if(unsubR)unsubR();unsubR=null;recipes=[];recipeView=null;recipeForm=null;hist=[];custom=[];cur=null;login()}
 function catsPanel(){
   if(!showCats)return '';
   const inp=$('input',{id:'cin',placeholder:'Nueva categoría (ej. Mascotas)','aria-label':'Nueva categoría'});
@@ -950,7 +954,7 @@ function bottomNav(){
     entries.map(([id,ico,label])=>$('button',{
       class:'nav-btn'+(navView===id?' active':''),
       'aria-current':navView===id?'page':'false',
-      onclick:()=>{navView=id;inList=false;editing=null;recipeView=null;recipeForm=null;recipeCatMgr=false;if(unsub){unsub();unsub=null}items=[];render()}
+      onclick:()=>{navView=id;inList=false;editing=null;recipeCat=null;recipeView=null;recipeForm=null;recipeCatMgr=false;if(unsub){unsub();unsub=null}items=[];render()}
     },$('span',{class:'nav-ico','aria-hidden':'true'},ico),$('span',{},label),id==='home'&&(inList||navView!=='home')&&anyNews()?$('span',{class:'nav-dot','aria-hidden':'true'}):''))
   );
 }
@@ -1322,7 +1326,7 @@ function render(){
 }
 
 // ---- Recetas ----
-let recipes=[],unsubR=null,recipeView=null,recipeForm=null;
+let recipes=[],unsubR=null,recipeView=null,recipeForm=null,recipeCat=null;
 const RECIPE_CATS_DEFAULT=[['Entrantes','🥗'],['Primeros platos','🍝'],['Segundos platos','🍖'],['Postres','🍰'],['Sopas y cremas','🍲'],['Ensaladas','🥬'],['Salsas','🥫'],['Otros','🍽️']].map(([n,i])=>({n,i}));
 const RCATS_DOC='_categorias';
 let recipeCats=null,recipeCatMgr=false;
@@ -1357,9 +1361,9 @@ async function askRecipeKey(msg){
   if(v.trim().toLowerCase()===BACKUP_KEY)return true;
   showMsg('Clave incorrecta');return false;
 }
-const recipeBar=title=>$('div',{class:'subbar'},$('div',{class:'subin'},
+const recipeBar=(title,icon)=>$('div',{class:'subbar'},$('div',{class:'subin'},
   $('button',{class:'back','aria-label':'Volver',onclick:()=>closeOverlays()},'‹'),
-  $('span',{class:'ico2'},'🍲'),$('h1',{},title)));
+  $('span',{class:'ico2'},icon||'🍲'),$('h1',{},title)));
 function renderRecipesPage(){
   if(recipeForm)return renderRecipeForm();
   if(recipeCatMgr)return renderRecipeCatMgr();
@@ -1370,19 +1374,29 @@ function renderRecipesPage(){
     r.photos&&r.photos[0]?$('img',{class:'recipe-img',src:r.photos[0],alt:'',draggable:'false'}):$('div',{class:'recipe-img noimg'},'🍲'),
     $('span',{class:'recipe-name'},r.title||'Receta'));
   const known=recipeCatList().map(c=>c.n);
-  const groups=recipeCatList().map(({n,i})=>({n,i,rows:recipes.filter(r=>r.cat===n)}));
-  groups.push({n:'Sin categoría',i:'📂',rows:recipes.filter(r=>!known.includes(r.cat))});
-  const body=[];
-  groups.forEach(g=>{if(!g.rows.length)return;
-    body.push($('div',{class:'recipe-cat-head'},$('span',{class:'ci','aria-hidden':'true'},g.i),g.n,$('small',{},String(g.rows.length))),
-      $('div',{class:'recipe-grid'},g.rows.map(card)));
-  });
+  const groups=recipeCatList().map(({n,i})=>({key:n,n,i,rows:recipes.filter(r=>r.cat===n)}));
+  const loose=recipes.filter(r=>!known.includes(r.cat));
+  if(loose.length)groups.push({key:'__none',n:'Sin categoría',i:'📂',rows:loose});
+  if(recipeCat&&!groups.some(g=>g.key===recipeCat))recipeCat=null;
+  const open=g=>{recipeCat=g.key;render();window.scrollTo(0,0)};
+  const countTxt=n=>n+(n===1?' receta':' recetas');
+  if(recipeCat){
+    const g=groups.find(x=>x.key===recipeCat);
+    app.replaceChildren(topBar(),recipeBar(g.n,g.i),$('div',{class:'wrap'},
+      $('button',{class:'add recipe-add',type:'button',onclick:()=>openRecipeForm(null,g.key)},'+ Añadir receta'),
+      g.rows.length?$('div',{class:'recipe-grid'},g.rows.map(card)):$('div',{class:'empty'},'Aún no hay recetas en «'+g.n+'». Pulsa «Añadir receta» para crear la primera.')),
+      bottomNav());
+    return;
+  }
+  const tiles=groups.map((g,idx)=>$('button',{class:'tile t'+(idx%4),type:'button','aria-label':g.n+', '+countTxt(g.rows.length),onclick:()=>open(g)},
+    $('span',{class:'ico'},g.i),$('span',{class:'ln'},g.n),$('span',{class:'rc-count'},countTxt(g.rows.length))));
   app.replaceChildren(topBar(),$('div',{class:'wrap'},
     $('div',{class:'page-title'},'Recetas'),
-    $('p',{class:'page-sub'},'Las recetas de la familia, guardadas y sincronizadas.'),
+    $('p',{class:'page-sub'},'Elige una categoría para ver sus recetas.'),
+    $('div',{class:'grid'},tiles),
     $('button',{class:'add recipe-add',type:'button',onclick:()=>openRecipeForm()},'+ Añadir receta'),
     $('button',{class:'btn2 recipe-manage',type:'button',onclick:()=>{recipeCatMgr=true;render();window.scrollTo(0,0)}},'⚙ Gestionar categorías'),
-    body.length?$('div',{},body):$('div',{class:'empty'},'Aún no hay recetas. Pulsa «Añadir receta» para crear la primera.')),
+    recipes.length?'':$('div',{class:'empty'},'Aún no hay recetas. Pulsa «Añadir receta» para crear la primera.')),
     bottomNav());
 }
 function renderRecipeCatMgr(){
@@ -1441,8 +1455,8 @@ async function deleteRecipe(r){
   rcol().doc(r.id).delete().catch(e=>uiAlert('No se pudo eliminar: '+e.message));
   showMsg('Receta eliminada');render();
 }
-function openRecipeForm(r){
-  recipeForm={id:r?r.id:null,title:r?r.title||'':'',photos:r?[...(r.photos||[])]:[],ingredients:r?r.ingredients||'':'',description:r?r.description||'':'',cat:r?r.cat||'':''};
+function openRecipeForm(r,defCat){
+  recipeForm={id:r?r.id:null,title:r?r.title||'':'',photos:r?[...(r.photos||[])]:[],ingredients:r?r.ingredients||'':'',description:r?r.description||'':'',cat:r?r.cat||'':(defCat&&defCat!=='__none'?defCat:'')};
   render();window.scrollTo(0,0);
 }
 function renderRecipeForm(){
