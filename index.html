@@ -469,7 +469,7 @@ const app=document.getElementById('app');
   document.addEventListener('focusout',()=>setTimeout(update,120),true);
 })();;
 const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);v===null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}};
-const APP_VERSION='24';
+const APP_VERSION='25';
 // ---- Ventanas propias (sustituyen a alert / confirm / prompt del navegador) ----
 let uiDlg=null;
 function uiDialog({message,input,okText='Aceptar',cancelText='Cancelar',showCancel=true,danger=false}){
@@ -697,6 +697,7 @@ function downloadText(name,text){
 const GOOGLE_CLIENT_ID='236987957661-out8fs1p03b6cf4g9lgk98fbq616bvuj.apps.googleusercontent.com';
 const DRIVE_ON=!/^PEGA_AQUI/.test(GOOGLE_CLIENT_ID);
 const DRIVE_FILE='FamilyLuismaux-copia.json';
+const DRIVE_HINT='luismaux@gmail.com'; // cuenta de Google donde se guarda la copia (así no hay que elegirla cada vez)
 let gTok=null,gExp=0;
 function loadGsi(){
   return new Promise((ok,fail)=>{
@@ -709,7 +710,7 @@ function driveToken(){
   if(gTok&&Date.now()<gExp-60000)return Promise.resolve(gTok);
   return loadGsi().then(()=>new Promise((ok,fail)=>{
     const tc=google.accounts.oauth2.initTokenClient({
-      client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file',
+      client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.file',hint:DRIVE_HINT,
       callback:r=>{if(r.error)return fail(new Error(r.error));gTok=r.access_token;gExp=Date.now()+(+r.expires_in||3600)*1000;ok(gTok)},
       error_callback:e=>fail(new Error((e&&e.type)||'cancelado'))
     });
